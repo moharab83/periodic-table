@@ -1,0 +1,1700 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#6c4cf5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="description" content="جدول دوري تفاعلي بالعربي: دوس على أي عنصر يظهرلك بشكل ثلاثي الأبعاد ويعرّفك بنفسه بالمصري.">
+<title>الجدول الدوري والمختبر الإلكتروني</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg1:#140f33; --bg2:#0a0820; --card:#1d1747; --brand:#6c4cf5; --brand2:#9b7bff;
+    --text:#f4f1ff; --muted:#b9b0e8; --line:rgba(255,255,255,.12);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:Cairo,system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;
+    background:radial-gradient(1200px 600px at 50% -10%, #2a1f6b 0%, var(--bg1) 45%, var(--bg2) 100%) fixed;
+    color:var(--text); -webkit-tap-highlight-color:transparent;
+  }
+  button,input,select{font-family:inherit}
+  header{padding:calc(env(safe-area-inset-top) + 18px) 16px 6px;text-align:center}
+  h1{font-size:1.55rem;margin:0;font-weight:800}
+  .sub{color:var(--muted);margin:.35em 0 0;font-size:.95rem}
+  .tools{display:flex;gap:8px;justify-content:center;align-items:center;padding:12px 14px 4px;flex-wrap:wrap}
+  .search{
+    flex:1;max-width:340px;min-width:180px;padding:10px 14px;border-radius:12px;border:1px solid var(--line);
+    background:rgba(255,255,255,.06);color:var(--text);font-size:1rem;outline:none
+  }
+  .search:focus{border-color:var(--brand2)}
+  .btn{
+    border:0;border-radius:12px;padding:10px 14px;font-size:.95rem;font-weight:600;cursor:pointer;
+    background:rgba(255,255,255,.08);color:var(--text)
+  }
+  .btn.primary{background:var(--brand);color:#fff}
+  .btn:active{transform:scale(.96)}
+  .hint{color:var(--muted);font-size:.85rem;text-align:center;margin:6px 0 0}
+
+  .table-wrap{overflow-x:auto;padding:12px 12px 8px;-webkit-overflow-scrolling:touch}
+  .ptable{
+    direction:ltr;display:grid;width:max-content;margin:0 auto;gap:3px;
+    grid-template-columns:repeat(18,46px);
+    grid-template-rows:repeat(7,54px) 12px repeat(2,54px);
+  }
+  .el{
+    border:0;border-radius:9px;padding:2px 2px 3px;color:#fff;cursor:pointer;position:relative;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;
+    box-shadow:inset 0 -3px 0 rgba(0,0,0,.18);transition:transform .12s, opacity .2s
+  }
+  .el .z{position:absolute;top:2px;left:4px;font-size:9px;opacity:.85}
+  .el .s{font-size:17px;font-weight:800;margin-top:6px}
+  .el .n{font-size:8.5px;white-space:nowrap;overflow:hidden;max-width:43px;opacity:.95}
+  .el:active{transform:scale(.9)}
+  .el.dim{opacity:.15}
+  .el.hit{outline:2px solid #fff;outline-offset:1px}
+  .ph{border-radius:9px;border:1px dashed var(--line);color:var(--muted);font-size:9px;display:flex;align-items:center;justify-content:center;direction:ltr}
+
+  .legend{display:flex;flex-wrap:wrap;gap:6px 10px;justify-content:center;padding:8px 14px calc(env(safe-area-inset-bottom) + 20px);font-size:.8rem;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+  /* ===== صفحة العنصر ===== */
+  #page{
+    position:fixed;inset:0;z-index:20;display:none;flex-direction:column;
+    background:radial-gradient(900px 700px at 50% 30%, #2b2170 0%, #120d33 55%, #07051a 100%);
+  }
+  #page.open{display:flex}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(env(safe-area-inset-top) + 10px) 12px 4px}
+  .topbar .title{font-weight:800;font-size:1.05rem;text-align:center;flex:1}
+  .stage{position:relative;flex:1;min-height:0}
+  #atom{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}
+  #atom:active{cursor:grabbing}
+  .drag-hint{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:.75rem;color:var(--muted);pointer-events:none}
+  .panel{
+    background:rgba(20,15,52,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+    border-top:1px solid var(--line);border-radius:20px 20px 0 0;
+    padding:14px 16px calc(env(safe-area-inset-bottom) + 14px)
+  }
+  .idrow{display:flex;gap:12px;align-items:center}
+  .tile{
+    width:64px;height:64px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    flex:none;direction:ltr;box-shadow:inset 0 -4px 0 rgba(0,0,0,.2)
+  }
+  .tile b{font-size:26px;line-height:1}
+  .tile small{font-size:11px;opacity:.9}
+  .idtext h2{margin:0;font-size:1.35rem}
+  .meta{color:var(--muted);font-size:.85rem;margin-top:2px}
+  .meta .ltr{direction:ltr;unicode-bidi:isolate;display:inline-block;white-space:nowrap}
+  .bubble{
+    margin-top:12px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:14px;
+    padding:10px 12px;font-size:1rem;line-height:1.75;max-height:28vh;overflow:auto
+  }
+  .bubble span{transition:background .2s,color .2s;border-radius:6px;padding:0 2px}
+  .bubble span.now{background:rgba(155,123,255,.35);color:#fff}
+  .actions{display:flex;gap:8px;margin-top:12px}
+  .actions .btn{flex:1}
+  .actions .talk{flex:2}
+
+  /* ===== المختبر ===== */
+  .labbtn{font-size:1.05rem;padding:12px 18px}
+  #lab{position:fixed;inset:0;z-index:20;display:none;flex-direction:column;
+    background:radial-gradient(900px 700px at 50% 30%, #1f3a5e 0%, #0e1838 55%, #060a1c 100%)}
+  #lab.open{display:flex}
+  #labCanvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+  .lab-panel{max-height:58vh;display:flex;flex-direction:column;padding-top:10px}
+  .slots{display:flex;align-items:center;gap:6px}
+  .slot{flex:1;min-width:0;border:2px dashed rgba(255,255,255,.25);background:rgba(255,255,255,.05);color:var(--muted);
+    border-radius:12px;padding:8px 6px;font-family:inherit;font-size:.9rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .slot.full{border-style:solid;color:#111;font-weight:800}
+  .slots .plus{font-weight:800;color:var(--muted)}
+  .lab-scroll{overflow:auto;margin-top:8px;flex:1;min-height:0}
+  .mini{direction:ltr;display:grid;width:max-content;gap:2px;grid-template-columns:repeat(18,34px);grid-template-rows:repeat(7,36px) 8px repeat(2,36px)}
+  .mini-wrap{overflow-x:auto;padding-bottom:4px}
+  .mc{border:0;border-radius:6px;color:#fff;font-family:inherit;font-weight:800;font-size:13px;line-height:1;cursor:pointer;padding:0;position:relative;transition:opacity .2s}
+  .mc small{position:absolute;top:1px;left:3px;font-size:7px;font-weight:600;opacity:.85}
+  .mc.dim{opacity:.13}
+  .mc.sel{outline:2px solid #fff;outline-offset:1px}
+  .partners{font-size:.85rem;color:var(--muted);margin:2px 0 8px;line-height:1.9}
+  .partners .chip{font-size:.8rem;padding:3px 8px;margin:0 2px}
+  .chip{border:0;border-radius:999px;padding:5px 10px;font-weight:700;color:#111;cursor:pointer;direction:ltr;font-family:inherit;font-size:.9rem}
+  .result{line-height:1.75}
+  .result h3{margin:0 0 2px;font-size:1.1rem}
+  .fx{direction:ltr;unicode-bidi:isolate;display:inline-block;font-weight:800;color:#9fe0ff}
+  .made{background:rgba(125,255,176,.08);border:1px solid rgba(125,255,176,.3);border-radius:14px;padding:8px 12px;margin-bottom:8px}
+  .card{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-bottom:6px}
+  .card .info{flex:1;min-width:0;font-size:.9rem;line-height:1.6}
+  .card .need{color:var(--muted);font-size:.82rem}
+  .card .btn{padding:8px 12px;white-space:nowrap}
+  .card.done{border-color:rgba(125,255,176,.35)}
+  .found{position:absolute;top:8px;left:0;right:0;text-align:center;font-size:.85rem;color:var(--muted);pointer-events:none}
+  .book{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:50vh;overflow:auto;margin-top:6px}
+  .book div{background:rgba(255,255,255,.06);border-radius:10px;padding:6px 8px;font-size:.85rem}
+  .book b{direction:ltr;unicode-bidi:isolate;display:inline-block}
+
+  /* إعدادات الصوت */
+  #settings{position:fixed;inset:0;z-index:40;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55)}
+  #settings.open{display:flex}
+  .sheet{
+    width:100%;max-width:520px;background:var(--card);border-radius:20px 20px 0 0;
+    padding:18px 16px calc(env(safe-area-inset-bottom) + 18px)
+  }
+  .sheet h3{margin:0 0 10px}
+  .sheet label{display:block;font-size:.9rem;color:var(--muted);margin:12px 0 6px}
+  .sheet select,.sheet input[type=range]{width:100%}
+  .sheet select{padding:10px;border-radius:10px;background:#120d33;color:var(--text);border:1px solid var(--line);font-size:.95rem}
+  .note{font-size:.82rem;color:var(--muted);line-height:1.7;margin-top:12px;background:rgba(255,255,255,.05);border-radius:10px;padding:8px 10px}
+  .warn{color:#ffcf6b}
+  .sheet .row{display:flex;gap:8px;margin-top:14px}
+  .sheet .row .btn{flex:1}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚛️ الجدول الدوري والمختبر الإلكتروني</h1>
+  <p class="sub">دوس على أي عنصر، هيظهرلك بشكل ثلاثي الأبعاد ويعرّفك بنفسه 👇</p>
+</header>
+
+<div class="tools">
+  <input id="q" class="search" type="search" placeholder="دوّر باسم العنصر أو رمزه أو رقمه…" aria-label="بحث عن عنصر">
+  <button class="btn" id="openSettings" aria-label="إعدادات الصوت">🔊 الصوت</button>
+  <button class="btn primary labbtn" id="openLab">🧪 ادخل المختبر</button>
+</div>
+<p class="hint">اسحب الجدول يمين وشمال لو الشاشة صغيرة</p>
+
+<div class="table-wrap" dir="ltr"><div class="ptable" id="ptable"></div></div>
+<div class="legend" id="legend"></div>
+
+<!-- صفحة العنصر -->
+<section id="page" aria-modal="true" role="dialog" aria-labelledby="elName">
+  <div class="topbar">
+    <button class="btn" id="back" aria-label="رجوع للجدول">→ رجوع</button>
+    <div class="title" id="topTitle"></div>
+    <button class="btn" id="openSettings2" aria-label="إعدادات الصوت">⚙️</button>
+  </div>
+  <div class="stage">
+    <canvas id="atom" aria-label="نموذج ثلاثي الأبعاد للذرة"></canvas>
+    <div class="drag-hint">اسحب بصباعك عشان تلفّ الذرة</div>
+  </div>
+  <div class="panel">
+    <div class="idrow">
+      <div class="tile" id="tile"></div>
+      <div class="idtext">
+        <h2 id="elName"></h2>
+        <div class="meta" id="elMeta"></div>
+      </div>
+    </div>
+    <div class="bubble" id="bubble" aria-live="polite"></div>
+    <div class="actions">
+      <button class="btn" id="prev" aria-label="العنصر اللي قبله">→ اللي قبله</button>
+      <button class="btn primary talk" id="talk">🔊 اسمعني</button>
+      <button class="btn" id="next" aria-label="العنصر اللي بعده">اللي بعده ←</button>
+    </div>
+  </div>
+</section>
+
+<!-- المختبر -->
+<section id="lab" aria-modal="true" role="dialog" aria-labelledby="labTitle">
+  <div class="topbar">
+    <button class="btn" id="labBack" aria-label="رجوع للجدول">→ الجدول</button>
+    <div class="title" id="labTitle">🧪 المختبر</div>
+    <button class="btn" id="labBookBtn" aria-label="كتاب الاكتشافات">📖</button>
+  </div>
+  <div class="stage">
+    <canvas id="labCanvas" aria-label="الكاس والمركّب ثلاثي الأبعاد"></canvas>
+    <div class="found" id="foundCount"></div>
+  </div>
+  <div class="panel lab-panel">
+    <div class="slots">
+      <button class="slot" id="slotA">① اختار عنصر</button>
+      <span class="plus">+</span>
+      <button class="slot" id="slotB">② اختار عنصر تاني</button>
+      <button class="btn" id="labClear" aria-label="ابدأ من الأول">🧹</button>
+    </div>
+    <div class="lab-scroll" id="labScroll">
+      <div id="labResult" class="result"></div>
+      <div class="mini-wrap" id="miniWrap" dir="ltr"><div class="mini" id="picker"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- كتاب الاكتشافات -->
+<div id="bookSheet" class="settingsLike" role="dialog" aria-modal="true" style="position:fixed;inset:0;z-index:40;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.55)">
+  <div class="sheet">
+    <h3 id="bookTitle">📖 كتاب الاكتشافات</h3>
+    <div class="book" id="book"></div>
+    <div class="row"><button class="btn" id="bookClose">تمام</button></div>
+  </div>
+</div>
+
+<!-- إعدادات الصوت -->
+<div id="settings" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+  <div class="sheet">
+    <h3 id="setTitle">إعدادات الصوت</h3>
+    <div id="humanBox" style="display:none">
+      <label>الصوت البشري المصري</label>
+      <div class="row" style="margin-top:0">
+        <button class="btn" id="pickShakir" data-who="shakir">👨 شاكر</button>
+        <button class="btn" id="pickSalma" data-who="salma">👩 سلمى</button>
+      </div>
+    </div>
+    <label for="voiceSel">صوت الجهاز (احتياطي)</label>
+    <select id="voiceSel"></select>
+    <label for="rate">السرعة: <span id="rateVal"></span></label>
+    <input id="rate" type="range" min="0.6" max="1.3" step="0.05">
+    <div class="note" id="voiceNote"></div>
+    <div class="row">
+      <button class="btn primary" id="testVoice">جرّب الصوت</button>
+      <button class="btn" id="closeSettings">تمام</button>
+    </div>
+  </div>
+</div>
+
+<noscript><p style="text-align:center">الموقع محتاج JavaScript يشتغل.</p></noscript>
+
+<script>
+"use strict";
+
+/* ================= البيانات ================= */
+// الرمز | الاسم | الكتلة الذرية | العيلة
+const RAW = `H|هيدروجين|1.008|nm
+He|هيليوم|4.0026|ng
+Li|ليثيوم|6.94|am
+Be|بيريليوم|9.0122|ae
+B|بورون|10.81|md
+C|كربون|12.011|nm
+N|نيتروجين|14.007|nm
+O|أكسجين|15.999|nm
+F|فلور|18.998|hl
+Ne|نيون|20.18|ng
+Na|صوديوم|22.99|am
+Mg|ماغنسيوم|24.305|ae
+Al|ألومنيوم|26.982|pt
+Si|سيليكون|28.085|md
+P|فوسفور|30.974|nm
+S|كبريت|32.06|nm
+Cl|كلور|35.45|hl
+Ar|أرجون|39.948|ng
+K|بوتاسيوم|39.098|am
+Ca|كالسيوم|40.078|ae
+Sc|سكانديوم|44.956|tm
+Ti|تيتانيوم|47.867|tm
+V|فاناديوم|50.942|tm
+Cr|كروم|51.996|tm
+Mn|منجنيز|54.938|tm
+Fe|حديد|55.845|tm
+Co|كوبالت|58.933|tm
+Ni|نيكل|58.693|tm
+Cu|نحاس|63.546|tm
+Zn|زنك|65.38|tm
+Ga|جاليوم|69.723|pt
+Ge|جرمانيوم|72.63|md
+As|زرنيخ|74.922|md
+Se|سيلينيوم|78.971|nm
+Br|بروم|79.904|hl
+Kr|كريبتون|83.798|ng
+Rb|روبيديوم|85.468|am
+Sr|سترونشيوم|87.62|ae
+Y|إتريوم|88.906|tm
+Zr|زركونيوم|91.224|tm
+Nb|نيوبيوم|92.906|tm
+Mo|موليبدنوم|95.95|tm
+Tc|تكنيشيوم|98|tm
+Ru|روثينيوم|101.07|tm
+Rh|روديوم|102.91|tm
+Pd|بالاديوم|106.42|tm
+Ag|فضة|107.87|tm
+Cd|كادميوم|112.41|tm
+In|إنديوم|114.82|pt
+Sn|قصدير|118.71|pt
+Sb|أنتيمون|121.76|md
+Te|تيلوريوم|127.6|md
+I|يود|126.9|hl
+Xe|زينون|131.29|ng
+Cs|سيزيوم|132.91|am
+Ba|باريوم|137.33|ae
+La|لانثانوم|138.91|ln
+Ce|سيريوم|140.12|ln
+Pr|براسيوديميوم|140.91|ln
+Nd|نيوديميوم|144.24|ln
+Pm|بروميثيوم|145|ln
+Sm|ساماريوم|150.36|ln
+Eu|يوروبيوم|151.96|ln
+Gd|جادولينيوم|157.25|ln
+Tb|تيربيوم|158.93|ln
+Dy|ديسبروسيوم|162.5|ln
+Ho|هولميوم|164.93|ln
+Er|إربيوم|167.26|ln
+Tm|ثوليوم|168.93|ln
+Yb|إتيربيوم|173.05|ln
+Lu|لوتيتيوم|174.97|ln
+Hf|هافنيوم|178.49|tm
+Ta|تانتالوم|180.95|tm
+W|تنجستن|183.84|tm
+Re|رينيوم|186.21|tm
+Os|أوزميوم|190.23|tm
+Ir|إيريديوم|192.22|tm
+Pt|بلاتين|195.08|tm
+Au|ذهب|196.97|tm
+Hg|زئبق|200.59|tm
+Tl|ثاليوم|204.38|pt
+Pb|رصاص|207.2|pt
+Bi|بزموت|208.98|pt
+Po|بولونيوم|209|pt
+At|أستاتين|210|hl
+Rn|رادون|222|ng
+Fr|فرانسيوم|223|am
+Ra|راديوم|226|ae
+Ac|أكتينيوم|227|an
+Th|ثوريوم|232.04|an
+Pa|بروتكتينيوم|231.04|an
+U|يورانيوم|238.03|an
+Np|نبتونيوم|237|an
+Pu|بلوتونيوم|244|an
+Am|أمريسيوم|243|an
+Cm|كوريوم|247|an
+Bk|بركيليوم|247|an
+Cf|كاليفورنيوم|251|an
+Es|أينشتاينيوم|252|an
+Fm|فرميوم|257|an
+Md|مندليفيوم|258|an
+No|نوبليوم|259|an
+Lr|لورنسيوم|266|an
+Rf|رذرفورديوم|267|tm
+Db|دوبنيوم|268|tm
+Sg|سيبورجيوم|269|tm
+Bh|بوريوم|270|tm
+Hs|هاسيوم|277|tm
+Mt|مايتنريوم|278|uk
+Ds|دارمشتاتيوم|281|uk
+Rg|رونتجينيوم|282|uk
+Cn|كوبرنيسيوم|285|uk
+Nh|نيهونيوم|286|uk
+Fl|فليروفيوم|289|uk
+Mc|موسكوفيوم|290|uk
+Lv|ليفرموريوم|293|uk
+Ts|تينيسين|294|uk
+Og|أوجانيسون|294|uk`;
+
+const ELEMENTS = RAW.trim().split("\n").map((line, i) => {
+  const [s, n, m, c] = line.split("|");
+  return { z: i + 1, s, n, m: +m, c };
+});
+
+const CATS = {
+  am: { name: "الفلزات القلوية", color: "#e0526b",
+        fact: "عيلتنا نشيطة أوي، ولو حطّوا واحد مننا في المية بيتفاعل بسرعة وساعات بيفرقع!" },
+  ae: { name: "الفلزات القلوية الترابية", color: "#f08a3c",
+        fact: "إحنا فلزات نشيطة، بس أهدى شوية من ولاد عمّنا القلويين." },
+  tm: { name: "الفلزات الانتقالية", color: "#4a7bd8",
+        fact: "إحنا فلزات قوية ولامعة، وأغلبنا بيوصّل الكهربا والحرارة كويس." },
+  pt: { name: "فلزات ما بعد الانتقالية", color: "#3aa39a",
+        fact: "إحنا فلزات طرية شوية، وبندوب في حرارة أقل من جيراننا الانتقاليين." },
+  md: { name: "أشباه الفلزات", color: "#9a8a3a",
+        fact: "أنا نُص فلز ونُص لا فلز، وعشان كده بيستخدموني في الإلكترونيات." },
+  nm: { name: "اللافلزات", color: "#3f9e4d",
+        fact: "إحنا مش بنلمع زي الفلزات، بس الحياة نفسها مبنية علينا." },
+  hl: { name: "الهالوجينات", color: "#2bb3c8",
+        fact: "عيلتنا نشيطة جدًا، وبنحب نتّحد مع الفلزات ونعمل أملاح." },
+  ng: { name: "الغازات النبيلة", color: "#8e5bd8",
+        fact: "عيلتنا هادية ومرتاحة، مداراتنا مليانة فمش بنحب نتفاعل مع حد." },
+  ln: { name: "اللانثانيدات", color: "#c2559c",
+        fact: "بيسمّونا العناصر الأرضية النادرة، وموجودين في المغناطيسات القوية والموبايلات." },
+  an: { name: "الأكتينيدات", color: "#b8456a",
+        fact: "أغلبنا مُشِع، يعني نوايانا مش مستقرة وبتطلّع إشعاع." },
+  uk: { name: "العناصر فائقة التِّقل", color: "#5d6680",
+        fact: "أنا متصنّع في المعمل، وبعيش جزء صغير جدًا من الثانية وبعدين بتحلّل." }
+};
+
+const FACTS = {
+  H:  "أنا أخف وأول عنصر في الكون كله، والشمس بتحرقني عشان تنوّرلك الدنيا.",
+  He: "أنا أخف من الهوا، وعشان كده البلالين اللي فيها هيليوم بتطير لفوق.",
+  Li: "أنا موجود في بطارية موبايلك دلوقتي.",
+  C:  "أنا أساس الحياة، وموجود في الفحم وفي الألماظ كمان!",
+  N:  "أنا تقريبًا أربعة من كل خمسة أجزاء من الهوا اللي بتتنفّسه.",
+  O:  "من غيري مش هتعرف تتنفّس، وأنا اللي بخلّي النار تولّع.",
+  F:  "أنا موجود في معجون السنان عشان أحمي سنانك من التسوّس.",
+  Ne: "أنا اللي بنوّر اللافتات الملوّنة بتاعة المحلات.",
+  Na: "لو اتّحدت مع الكلور نبقى ملح الطعام اللي على السفرة.",
+  Mg: "بولّع بنور أبيض قوي جدًا، وجسمك محتاجني عشان عضلاتك.",
+  Al: "أنا خفيف ومش بصدّي، وبيعملوا مني ورق الألومنيوم وعلب الكانز.",
+  Si: "أنا قلب كل شريحة إلكترونية، وموجود في الرملة.",
+  P:  "أنا موجود في عضمك وفي الـ دي إن إيه بتاعك.",
+  S:  "لو اتّحدت مع الهيدروجين ريحتي بتبقى زي البيض المعفّن.",
+  Cl: "بيحطّوني في مية حمامات السباحة عشان أقتل الجراثيم.",
+  Ar: "أنا موجود في الهوا حواليك، وبيستخدموني في اللحام.",
+  K:  "موجود في الموز، وجسمك محتاجني عشان قلبك وأعصابك.",
+  Ca: "أنا اللي بقوّي عضمك وسنانك، وموجود في اللبن.",
+  Ti: "أنا قوي وخفيف، وبيعملوا مني أجزاء في الطيارات والمفاصل الصناعية.",
+  Fe: "أنا موجود في دمّك، وبيبنوا بيّا الكباري والعماير.",
+  Cu: "أنا اللي جوّه أسلاك الكهربا في بيتك، ولوني بنّي محمّر.",
+  Zn: "بيغطّوا بيّا الحديد عشان ما يصدّيش.",
+  Ag: "أنا أحسن عنصر بيوصّل الكهربا في الدنيا، وبيعملوا مني خواتم وسلاسل.",
+  Sn: "لو خلطوني مع النحاس يطلع البرونز.",
+  I:  "جسمك محتاجني عشان الغدة الدرقية، وعشان كده بيحطّوني في ملح الطعام.",
+  W:  "عندي أعلى درجة انصهار بين كل الفلزات.",
+  Pt: "أنا فلز غالي جدًا، وموجود في شكمان العربيات عشان أنضّف العادم.",
+  Au: "أنا الدهب! مش بصدّي أبدًا، وقدماء المصريين عملوا مني قناع توت عنخ آمون.",
+  Hg: "أنا الفلز الوحيد اللي بيفضل سايل في درجة حرارة الأوضة.",
+  Pb: "أنا تقيل جدًا، وبيستخدموني عشان أحمي الناس من الإشعاع.",
+  U:  "نوايتي بتنقسم وتطلّع طاقة رهيبة في محطات الكهربا النووية.",
+  Og: "أنا آخر عنصر في الجدول لحد دلوقتي، وأتقلهم كلهم."
+};
+
+/* ================= توزيع الإلكترونات على المدارات ================= */
+const AUFBAU = [[1,0],[2,0],[2,1],[3,0],[3,1],[4,0],[3,2],[4,1],[5,0],[4,2],[5,1],[6,0],[4,3],[5,2],[6,1],[7,0],[5,3],[6,2],[7,1]];
+const SHELL_EXCEPTIONS = {
+  24:[2,8,13,1], 29:[2,8,18,1], 41:[2,8,18,12,1], 42:[2,8,18,13,1], 44:[2,8,18,15,1],
+  45:[2,8,18,16,1], 46:[2,8,18,18], 47:[2,8,18,18,1], 57:[2,8,18,18,9,2], 58:[2,8,18,19,9,2],
+  64:[2,8,18,25,9,2], 78:[2,8,18,32,17,1], 79:[2,8,18,32,18,1], 89:[2,8,18,32,18,9,2],
+  90:[2,8,18,32,18,10,2], 91:[2,8,18,32,20,9,2], 92:[2,8,18,32,21,9,2], 93:[2,8,18,32,22,9,2],
+  96:[2,8,18,32,25,9,2], 103:[2,8,18,32,32,8,3]
+};
+function shellsOf(z) {
+  if (SHELL_EXCEPTIONS[z]) return SHELL_EXCEPTIONS[z].slice();
+  const sh = []; let left = z;
+  for (const [n, l] of AUFBAU) {
+    if (left <= 0) break;
+    const e = Math.min(2 * (2 * l + 1), left);
+    sh[n - 1] = (sh[n - 1] || 0) + e; left -= e;
+  }
+  return Array.from(sh, x => x || 0);
+}
+
+/* ================= مكان العنصر في الجدول ================= */
+function posOf(z) {
+  if (z === 1) return [1, 1];
+  if (z === 2) return [18, 1];
+  if (z <= 10) { const i = z - 3;  return [i < 2 ? i + 1 : i + 11, 2]; }
+  if (z <= 18) { const i = z - 11; return [i < 2 ? i + 1 : i + 11, 3]; }
+  if (z <= 36) return [z - 18, 4];
+  if (z <= 54) return [z - 36, 5];
+  if (z <= 56) return [z - 54, 6];
+  if (z <= 71) return [z - 57 + 4, 9];
+  if (z <= 86) return [z - 72 + 4, 6];
+  if (z <= 88) return [z - 86, 7];
+  if (z <= 103) return [z - 89 + 4, 10];
+  return [z - 104 + 4, 7];
+}
+
+/* ================= النطق بالمصري ================= */
+// نطق حروف الرمز زي ما المصريين بيقولوها
+const LETTERS = {
+  A:"إيه", B:"بي", C:"سي", D:"دي", E:"إي", F:"إف", G:"جي", H:"إتش", I:"آي", J:"جيه",
+  K:"كيه", L:"إل", M:"إم", N:"إن", O:"أو", P:"بي", Q:"كيو", R:"آر", S:"إس", T:"تي",
+  U:"يو", V:"في", W:"دبليو", X:"إكس", Y:"واي", Z:"زِد"
+};
+const ONES = ["","واحد","اتنين","تلاتة","أربعة","خمسة","ستة","سبعة","تمانية","تسعة","عشرة"];
+const TEENS = {11:"حداشر",12:"اتناشر",13:"تلاتاشر",14:"أربعتاشر",15:"خمستاشر",16:"ستاشر",17:"سبعتاشر",18:"تمنتاشر",19:"تسعتاشر"};
+const TENS = {20:"عشرين",30:"تلاتين",40:"أربعين",50:"خمسين",60:"ستين",70:"سبعين",80:"تمانين",90:"تسعين"};
+const HUNDREDS = {1:"مية",2:"ميتين",3:"تلتمية"};
+const CONSTRUCT = {3:"تلات",4:"أربع",5:"خمس",6:"ست",7:"سبع",8:"تمن",9:"تسع",10:"عشر"};
+
+function egyNumber(n) {
+  if (n === 0) return "صفر";
+  if (n >= 100) {
+    const h = Math.floor(n / 100), r = n % 100;
+    return HUNDREDS[h] + (r ? " و" + egyNumber(r) : "");
+  }
+  if (n <= 10) return ONES[n];
+  if (n < 20) return TEENS[n];
+  const t = Math.floor(n / 10) * 10, o = n % 10;
+  return o ? ONES[o] + " و" + TENS[t] : TENS[t];
+}
+
+const NOUNS = {
+  p: ["بروتون", "بروتونات", "بروتونين"],
+  e: ["إلكترون", "إلكترونات", "إلكترونين"],
+  o: ["مدار", "مدارات", "مدارين"]
+};
+function countOf(n, kind, spoken) {
+  const [one, many, two] = NOUNS[kind];
+  if (n === 1) return one + " واحد";
+  if (n === 2) return two;
+  if (n <= 10) return (spoken ? CONSTRUCT[n] : n) + " " + many;
+  return (spoken ? egyNumber(n) : n) + " " + one;
+}
+
+// بيرجّع الجمل: spoken=true للنطق (أرقام بالكلام والحروف منطوقة)، false للعرض
+function introSentences(el, spoken) {
+  const sh = shellsOf(el.z);
+  const num = x => spoken ? egyNumber(x) : String(x);
+  const sym = spoken ? el.s.toUpperCase().split("").map(ch => LETTERS[ch]).join(" ") : el.s;
+  const verb = el.z === 1 ? "بيلفّ" : "بيلفّوا";
+  return [
+    `أهلاً يا صاحبي! أنا ال${el.n}.`,
+    `رمزي ${sym}، ورقمي الذرّي ${num(el.z)}.`,
+    `يعني جوّه نواتي ${countOf(el.z, "p", spoken)}، وحواليّا ${countOf(el.z, "e", spoken)} ${verb} في ${countOf(sh.length, "o", spoken)}.`,
+    `وزني الذرّي حوالي ${num(Math.round(el.m))}.`,
+    `أنا من عيلة ${CATS[el.c].name}.`,
+    FACTS[el.s] || CATS[el.c].fact
+  ];
+}
+
+/* ================= الصوت ================= */
+const Voice = {
+  supported: typeof window !== "undefined" && "speechSynthesis" in window,
+  voices: [], chosen: null, rate: 0.95, talking: false, token: 0,
+  onState: () => {}, onSentence: () => {}, onSilent: () => {}, watch: 0,
+
+  load() {
+    if (!this.supported) return;
+    const all = speechSynthesis.getVoices();
+    const score = v => {
+      let s = 0; const name = v.name.toLowerCase(), lang = v.lang.toLowerCase();
+      if (lang === "ar-eg") s += 100;
+      if (/salma|shakir/.test(name)) s += 50;
+      if (/natural|online|neural|premium|enhanced/.test(name)) s += 20;
+      if (v.localService) s += 1;
+      return s;
+    };
+    this.voices = all.filter(v => /^ar/i.test(v.lang)).sort((a, b) => score(b) - score(a));
+    let saved = null;
+    try { saved = localStorage.getItem("voiceName"); const r = parseFloat(localStorage.getItem("voiceRate")); if (r) this.rate = r; } catch (e) {}
+    this.chosen = this.voices.find(v => v.name === saved) || this.voices[0] || null;
+  },
+
+  speak(sentences) {
+    if (!this.supported) return false;
+    if (speechSynthesis.speaking || speechSynthesis.pending) this.stop();
+    const my = ++this.token;
+    let started = false;
+    clearTimeout(this.watch);
+    this.watch = setTimeout(() => { if (my === this.token && !started) this.onSilent(); }, 3000);
+    sentences.forEach((text, i) => {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = this.chosen ? this.chosen.lang : "ar-EG";
+      if (this.chosen) u.voice = this.chosen;
+      u.rate = this.rate; u.pitch = 1.08;
+      u.onstart = () => { started = true; if (my !== this.token) return; this.talking = true; this.onState(true); this.onSentence(i); };
+      const done = () => {
+        if (my !== this.token) return;
+        if (i === sentences.length - 1) { this.talking = false; this.onState(false); this.onSentence(-1); }
+      };
+      u.onend = done; u.onerror = done;
+      speechSynthesis.speak(u);   // جملة جملة عشان كروم بيقطع الكلام الطويل
+    });
+    return true;
+  },
+
+  stop() {
+    this.token++;
+    if (this.supported) speechSynthesis.cancel();
+    if (this.talking) { this.talking = false; this.onState(false); this.onSentence(-1); }
+  }
+};
+
+/* ================= الصوت البشري المسجّل ================= */
+// لو فيه ملفات audio/1.mp3 … audio/118.mp3 جنب الصفحة، الموقع بيشغّلها بدل صوت الجهاز
+const AudioVoice = {
+  available: false, have: {}, who: "shakir", talking: false, audio: null, ctx: null, analyser: null, buf: null, lv: 0, weights: [], idx: -1,
+  onState: () => {}, onSentence: () => {},
+
+  // الأصوات: audio/shakir/1.mp3 … و audio/salma/1.mp3 …
+  async probe() {
+    try { const w = localStorage.getItem("humanVoice"); if (w) this.who = w; } catch (e) {}
+    if (typeof fetch === "undefined" || location.protocol === "file:") return false;
+    for (const who of ["shakir", "salma"]) {
+      try {
+        const r = await fetch(`audio/${who}/1.mp3`, { method: "HEAD", cache: "no-store" });
+        this.have[who] = r.ok && /audio|mpeg/.test((r.headers.get("content-type") || "").toLowerCase());
+      } catch (e) { this.have[who] = false; }
+    }
+    if (!this.have[this.who]) this.who = this.have.shakir ? "shakir" : "salma";
+    this.available = !!this.have[this.who];
+    return this.available;
+  },
+
+  setWho(who) {
+    if (!this.have[who]) return false;
+    this.who = who; this.available = true;
+    try { localStorage.setItem("humanVoice", who); } catch (e) {}
+    return true;
+  },
+
+  ensureCtx() {
+    if (this.ctx) { if (this.ctx.state === "suspended") this.ctx.resume(); return true; }
+    try {
+      const C = window.AudioContext || window.webkitAudioContext; if (!C) return false;
+      this.ctx = new C();
+      this.analyser = this.ctx.createAnalyser(); this.analyser.fftSize = 512;
+      this.buf = new Uint8Array(this.analyser.fftSize);
+      this.analyser.connect(this.ctx.destination);
+      return true;
+    } catch (e) { this.ctx = null; this.analyser = null; return false; }
+  },
+  wireAnalyser() {
+    if (!this.ensureCtx() || this.mediaSrc) return;
+    try { this.mediaSrc = this.ctx.createMediaElementSource(this.audio); this.mediaSrc.connect(this.analyser); } catch (e) {}
+  },
+
+  // ملف واحد فيه كذا جملة: بنشغّل الحتة المطلوبة بس
+  bufs: {}, sprTok: 0, srcNode: null,
+  playSprite(url, start, dur, parts) {
+    this.stop();
+    if (!this.ensureCtx()) { Voice.speak(parts); return; }
+    const my = ++this.sprTok;
+    this.parts = parts; this.talking = true; this.onState(true); this.onSentence(0);
+    const go = buf => {
+      if (my !== this.sprTok || !this.talking) return;
+      const src = this.ctx.createBufferSource(); src.buffer = buf; src.connect(this.analyser);
+      src.onended = () => { if (this.srcNode === src) { this.srcNode = null; this.finish(); } };
+      this.srcNode = src; src.start(0, start, dur);
+    };
+    if (this.bufs[url]) return go(this.bufs[url]);
+    fetch(url).then(r => { if (!r.ok) throw new Error("no file"); return r.arrayBuffer(); })
+      .then(ab => new Promise((res, rej) => this.ctx.decodeAudioData(ab, res, rej)))
+      .then(buf => { this.bufs[url] = buf; go(buf); })
+      .catch(() => { if (my === this.sprTok && this.talking) { this.finish(); Voice.speak(parts); } });
+  },
+
+  play(el) {
+    return this.playSrc(`audio/${this.who}/${el.z}.mp3`, introSentences(el, true));
+  },
+
+  playSrc(src, parts) {
+    this.stop();
+    if (!this.audio) {
+      this.audio = new Audio(); this.audio.preload = "auto";
+      this.audio.addEventListener("timeupdate", () => this.track());
+      this.audio.addEventListener("ended", () => this.finish());
+      this.audio.addEventListener("error", () => {
+        // الملف ناقص؟ نرجع لصوت الجهاز
+        if (!this.talking) return; this.finish(); Voice.speak(this.parts);
+      });
+    }
+    this.parts = parts;
+    const total = parts.reduce((a, s) => a + s.length, 0);
+    let acc = 0; this.weights = parts.map(s => (acc += s.length) / total);
+    this.audio.src = src;
+    this.wireAnalyser();
+    this.talking = true; this.idx = -1; this.onState(true); this.onSentence(0);
+    const p = this.audio.play();
+    if (p && p.catch) p.catch(() => { if (this.talking) { this.finish(); Voice.speak(parts); } });
+    return true;
+  },
+
+  // نعلّم الجملة اللي بتتقال حسب مكاننا في الملف
+  track() {
+    const a = this.audio; if (!this.talking || !a.duration) return;
+    const f = a.currentTime / a.duration;
+    let i = this.weights.findIndex(w => f <= w); if (i < 0) i = this.weights.length - 1;
+    if (i !== this.idx) { this.idx = i; this.onSentence(i); }
+  },
+
+  // مستوى الصوت عشان البُق يتحرك مع الكلام فعلًا
+  level(t) {
+    if (!this.analyser) return 0.5 + 0.5 * Math.sin(t * 15);
+    this.analyser.getByteTimeDomainData(this.buf);
+    let sum = 0; for (let i = 0; i < this.buf.length; i++) { const v = (this.buf[i] - 128) / 128; sum += v * v; }
+    const target = Math.min(1, Math.sqrt(sum / this.buf.length) * 5);
+    this.lv = this.lv * 0.55 + target * 0.45;
+    return this.lv;
+  },
+
+  finish() { this.talking = false; this.onState(false); this.onSentence(-1); },
+  stop() {
+    this.sprTok++;
+    if (this.srcNode) { const n = this.srcNode; this.srcNode = null; try { n.stop(); } catch (e) {} }
+    if (this.audio) { this.audio.pause(); }
+    if (this.talking) this.finish();
+  }
+};
+
+const Speaker = {
+  speak(el) { return AudioVoice.available ? AudioVoice.play(el) : Voice.speak(introSentences(el, true)); },
+  stop() { AudioVoice.stop(); Voice.stop(); },
+  talking() { return AudioVoice.talking || Voice.talking; }
+};
+
+/* ================= الذرة ثلاثية الأبعاد ================= */
+function makeSprite(inner, outer, glow) {
+  const c = document.createElement("canvas"); const S = 64; c.width = c.height = S;
+  const g = c.getContext("2d");
+  if (glow) {
+    const gg = g.createRadialGradient(S/2, S/2, 0, S/2, S/2, S/2);
+    gg.addColorStop(0, "rgba(255,255,255,1)"); gg.addColorStop(0.25, inner);
+    gg.addColorStop(0.55, outer); gg.addColorStop(1, "rgba(0,0,0,0)");
+    g.fillStyle = gg; g.fillRect(0, 0, S, S);
+  } else {
+    const gg = g.createRadialGradient(S*0.38, S*0.34, S*0.04, S/2, S/2, S/2);
+    gg.addColorStop(0, "#ffffff"); gg.addColorStop(0.18, inner); gg.addColorStop(1, outer);
+    g.fillStyle = gg; g.beginPath(); g.arc(S/2, S/2, S/2 - 1, 0, Math.PI * 2); g.fill();
+  }
+  return c;
+}
+
+const Atom = {
+  canvas: null, ctx: null, w: 0, h: 0, dpr: 1, raf: 0, last: 0, t: 0,
+  yaw: 0.6, pitch: -0.35, dragging: false, lx: 0, ly: 0, idle: 0,
+  nucleons: [], orbits: [], talking: false, blinkAt: 2,
+
+  init(canvas) {
+    this.canvas = canvas; this.ctx = canvas.getContext("2d");
+    this.sp = {
+      p: makeSprite("#ff6b6b", "#8e1b2e"),
+      n: makeSprite("#9fb3d9", "#2e3d63"),
+      e: makeSprite("#7ef9ff", "rgba(60,180,255,.55)", true)
+    };
+    const ro = new ResizeObserver(() => this.resize()); ro.observe(canvas);
+    canvas.addEventListener("pointerdown", e => {
+      this.dragging = true; this.lx = e.clientX; this.ly = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener("pointermove", e => {
+      if (!this.dragging) return;
+      this.yaw += (e.clientX - this.lx) * 0.01;
+      this.pitch = Math.max(-1.4, Math.min(1.4, this.pitch + (e.clientY - this.ly) * 0.01));
+      this.lx = e.clientX; this.ly = e.clientY; this.idle = 0;
+    });
+    const end = () => { this.dragging = false; };
+    canvas.addEventListener("pointerup", end); canvas.addEventListener("pointercancel", end);
+  },
+
+  resize() {
+    const r = this.canvas.getBoundingClientRect();
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.w = r.width; this.h = r.height;
+    this.canvas.width = Math.round(r.width * this.dpr); this.canvas.height = Math.round(r.height * this.dpr);
+    this.layout();
+  },
+
+  setElement(el) {
+    this.el = el;
+    const neutrons = Math.max(0, Math.round(el.m) - el.z);
+    const total = el.z + neutrons, N = Math.min(total, 70);
+    const pShare = el.z / total;
+    this.nucleons = [];
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < N; i++) {
+      const y = N === 1 ? 0 : 1 - (i / (N - 1)) * 2, rr = Math.sqrt(1 - y * y), th = golden * i;
+      const depth = Math.cbrt((i + 0.5) / N);
+      // نوزّع البروتونات والنيوترونات بالتساوي حسب نسبتهم الحقيقية
+      const type = Math.floor((i + 1) * pShare) > Math.floor(i * pShare) ? "p" : "n";
+      this.nucleons.push({ x: Math.cos(th) * rr * depth, y: y * depth, z: Math.sin(th) * rr * depth, type });
+    }
+    if (!this.nucleons.some(n => n.type === "p")) this.nucleons[0].type = "p";
+
+    const sh = shellsOf(el.z);
+    this.orbits = sh.map((count, k) => {
+      const tilt = 0.35 + k * 0.62, spin = k * 1.37;
+      const nx = Math.sin(tilt) * Math.cos(spin), ny = Math.cos(tilt), nz = Math.sin(tilt) * Math.sin(spin);
+      let ux = ny, uy = -nx, uz = 0; let L = Math.hypot(ux, uy, uz) || 1; ux /= L; uy /= L; uz /= L;
+      const vx = ny * uz - nz * uy, vy = nz * ux - nx * uz, vz = nx * uy - ny * ux;
+      return { count, u: [ux, uy, uz], v: [vx, vy, vz], speed: 1.1 / (1 + k * 0.45) * (k % 2 ? -1 : 1), r: 0 };
+    });
+    this.layout();
+  },
+
+  layout() {
+    if (!this.el || !this.w) return;
+    const maxR = Math.min(this.w, this.h) * 0.46;
+    const n = this.nucleons.length;
+    this.ballR = Math.max(6, Math.min(11, maxR * 0.06));
+    this.nucR = this.ballR * (n === 1 ? 1 : Math.cbrt(n) * 1.05);
+    const start = this.nucR + Math.max(22, maxR * 0.16);
+    const step = this.orbits.length > 1 ? (maxR - start) / (this.orbits.length - 1) : 0;
+    this.orbits.forEach((o, k) => { o.r = start + k * step; });
+  },
+
+  start() { if (!this.raf) { this.last = performance.now(); this.raf = requestAnimationFrame(t => this.frame(t)); } },
+  stop() { cancelAnimationFrame(this.raf); this.raf = 0; },
+
+  frame(now) {
+    const dt = Math.min(0.05, (now - this.last) / 1000); this.last = now; this.t += dt;
+    if (!this.dragging) { this.idle += dt; if (this.idle > 1.2) this.yaw += dt * 0.35; }
+    this.draw();
+    this.raf = requestAnimationFrame(t => this.frame(t));
+  },
+
+  project(x, y, z) {
+    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw), cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    const x1 = x * cy + z * sy, z1 = -x * sy + z * cy;
+    const y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+    const D = Math.max(this.w, this.h) * 1.6, f = D / (D + z2);
+    return { x: this.w / 2 + x1 * f, y: this.h / 2 + y2 * f, z: z2, f };
+  },
+
+  draw() {
+    const g = this.ctx; if (!this.el) return;
+    g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+    g.clearRect(0, 0, this.w, this.h);
+    const items = [];
+    const pulse = this.talking ? 1 + 0.05 * Math.sin(this.t * 14) : 1 + 0.015 * Math.sin(this.t * 2);
+
+    // المدارات (قطع صغيرة عشان العمق يبقى صح)
+    const SEG = 72;
+    this.orbits.forEach(o => {
+      let prev = null;
+      for (let i = 0; i <= SEG; i++) {
+        const a = (i / SEG) * Math.PI * 2, c = Math.cos(a) * o.r, s = Math.sin(a) * o.r;
+        const p = this.project(c * o.u[0] + s * o.v[0], c * o.u[1] + s * o.v[1], c * o.u[2] + s * o.v[2]);
+        if (prev) items.push({ z: (p.z + prev.z) / 2, kind: "seg", a: prev, b: p });
+        prev = p;
+      }
+      for (let j = 0; j < o.count; j++) {
+        const a = this.t * o.speed + (j / o.count) * Math.PI * 2, c = Math.cos(a) * o.r, s = Math.sin(a) * o.r;
+        const p = this.project(c * o.u[0] + s * o.v[0], c * o.u[1] + s * o.v[1], c * o.u[2] + s * o.v[2]);
+        items.push({ z: p.z, kind: "e", p });
+      }
+    });
+    // النواة
+    const R = this.nucR * pulse;
+    this.nucleons.forEach(n => {
+      const p = this.project(n.x * R, n.y * R, n.z * R);
+      items.push({ z: p.z, kind: n.type, p });
+    });
+
+    items.sort((a, b) => b.z - a.z);
+    const maxZ = (this.orbits.length ? this.orbits[this.orbits.length - 1].r : 50) || 50;
+
+    // هالة النواة
+    const hg = g.createRadialGradient(this.w/2, this.h/2, 0, this.w/2, this.h/2, R * 3);
+    hg.addColorStop(0, "rgba(255,120,150,.35)"); hg.addColorStop(1, "rgba(255,120,150,0)");
+    g.fillStyle = hg; g.beginPath(); g.arc(this.w/2, this.h/2, R * 3, 0, Math.PI * 2); g.fill();
+
+    g.lineWidth = 1.4;
+    for (const it of items) {
+      if (it.kind === "seg") {
+        const depth = 0.5 - it.z / (2 * maxZ);   // 0 بعيد → 1 قريب
+        g.strokeStyle = `rgba(175,155,255,${0.12 + depth * 0.45})`;
+        g.beginPath(); g.moveTo(it.a.x, it.a.y); g.lineTo(it.b.x, it.b.y); g.stroke();
+      } else if (it.kind === "e") {
+        const s = this.ballR * 2.6 * it.p.f;
+        g.drawImage(this.sp.e, it.p.x - s / 2, it.p.y - s / 2, s, s);
+      } else {
+        const s = this.ballR * 2 * it.p.f;
+        g.drawImage(this.sp[it.kind], it.p.x - s / 2, it.p.y - s / 2, s, s);
+      }
+    }
+    this.drawFace(R);
+  },
+
+  // وش صغير على النواة بيتكلّم
+  drawFace(R) {
+    const g = this.ctx, cx = this.w / 2, cy = this.h / 2;
+    const F = Math.max(R * 0.95, 20);
+    if (this.t > this.blinkAt + 0.14) this.blinkAt = this.t + 2 + Math.random() * 3;
+    const blinking = this.t > this.blinkAt;
+    g.save();
+    g.globalAlpha = 0.95;
+    // عينين
+    [-1, 1].forEach(side => {
+      const ex = cx + side * F * 0.36, ey = cy - F * 0.18, er = F * 0.17;
+      g.fillStyle = "#fff"; g.beginPath();
+      if (blinking) g.ellipse(ex, ey, er, er * 0.15, 0, 0, Math.PI * 2);
+      else g.arc(ex, ey, er, 0, Math.PI * 2);
+      g.fill();
+      if (!blinking) { g.fillStyle = "#1a1038"; g.beginPath(); g.arc(ex + er * 0.15, ey + er * 0.1, er * 0.5, 0, Math.PI * 2); g.fill(); }
+    });
+    // بُق
+    const my = cy + F * 0.33, mw = F * 0.32;
+    g.fillStyle = "#2a0f22"; g.strokeStyle = "#fff"; g.lineWidth = Math.max(2, F * 0.07); g.lineCap = "round";
+    if (this.talking) {
+      const lvl = AudioVoice.talking ? AudioVoice.level(this.t) : Math.abs(Math.sin(this.t * 15) * Math.sin(this.t * 6.3 + 1));
+      const open = F * (0.04 + 0.2 * lvl);
+      g.beginPath(); g.ellipse(cx, my, mw * 0.8, open, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+    } else {
+      g.beginPath(); g.arc(cx, my - F * 0.12, mw, Math.PI * 0.2, Math.PI * 0.8); g.stroke();
+    }
+    g.restore();
+  }
+};
+
+
+/* ================= المختبر: المركّبات ================= */
+const LAB_ELEMENTS = {
+  H:{c:"#ffffff",r:.55}, C:{c:"#5a5a5a",r:.85}, N:{c:"#4f7cff",r:.8}, O:{c:"#ff4d4d",r:.78},
+  F:{c:"#a8f07a",r:.7}, Na:{c:"#b47bff",r:1.1}, Mg:{c:"#6fe06f",r:1.0}, Al:{c:"#d7b2b2",r:1.0},
+  S:{c:"#ffd84a",r:.95}, Cl:{c:"#45d978",r:.95}, K:{c:"#9a52e0",r:1.2}, Ca:{c:"#8fe3a8",r:1.1},
+  Fe:{c:"#e6733a",r:1.0}, Cu:{c:"#d4914a",r:1.0}, Zn:{c:"#9aa6c8",r:1.0}, Ag:{c:"#e2e2ec",r:1.05}
+};
+const T = 0.63;
+const LAB = [
+  {c:{H:2}, n:"غاز الهيدروجين", f:"H₂", t:"الغاز ده خفيف جدًا وبيولّع بسرعة، وبيستخدموه وقود للصواريخ.",
+   a:[["H",-.37,0,0],["H",.37,0,0]], b:[[0,1,1]]},
+  {c:{O:2}, n:"غاز الأكسجين", f:"O₂", t:"ده الأكسجين اللي بتتنفّسه، ودايمًا بيمشي ذرتين مع بعض.",
+   a:[["O",-.6,0,0],["O",.6,0,0]], b:[[0,1,2]]},
+  {c:{N:2}, n:"غاز النيتروجين", f:"N₂", t:"ده أكتر غاز في الهوا حواليك، والرابطة بين الذرتين دي من أقوى الروابط.",
+   a:[["N",-.55,0,0],["N",.55,0,0]], b:[[0,1,3]]},
+  {c:{Cl:2}, n:"غاز الكلور", f:"Cl₂", t:"غاز لونه أصفر مخضر وريحته نفّاذة، وبيستخدموه في تعقيم المية.",
+   a:[["Cl",-1,0,0],["Cl",1,0,0]], b:[[0,1,1]]},
+  {c:{O:3}, n:"الأوزون", f:"O₃", t:"طبقة الأوزون اللي فوق في السما بتحمينا من أشعة الشمس الضارة.",
+   a:[["O",0,.3,0],["O",-1.1,-.35,0],["O",1.1,-.35,0]], b:[[0,1,2],[0,2,1]]},
+  {c:{H:2,O:1}, n:"المية", f:"H₂O", t:"أهم حاجة في الدنيا! من غيرها مفيش حياة.",
+   a:[["O",0,-.2,0],["H",.76,.4,0],["H",-.76,.4,0]], b:[[0,1,1],[0,2,1]]},
+  {c:{H:2,O:2}, n:"ماء الأكسجين", f:"H₂O₂", t:"شبه المية بس فيه ذرة أكسجين زيادة، وبيستخدموه في تطهير الجروح.",
+   a:[["O",.7,0,0],["O",-.7,0,0],["H",1.05,.85,.2],["H",-1.05,-.2,.85]], b:[[0,1,1],[0,2,1],[1,3,1]]},
+  {c:{C:1,O:2}, n:"ثاني أكسيد الكربون", f:"CO₂", t:"ده الغاز اللي بتطلّعه وانت بتتنفّس، وهو اللي بيعمل الفقاقيع في المياه الغازية.",
+   a:[["C",0,0,0],["O",-1.16,0,0],["O",1.16,0,0]], b:[[0,1,2],[0,2,2]]},
+  {c:{C:1,O:1}, n:"أول أكسيد الكربون", f:"CO", t:"غاز خطير جدًا مالوش لون ولا ريحة، وعشان كده لازم التهوية تبقى كويسة جنب السخان.",
+   a:[["C",-.56,0,0],["O",.56,0,0]], b:[[0,1,3]]},
+  {c:{C:1,H:4}, n:"الميثان", f:"CH₄", t:"ده الغاز الطبيعي اللي بيولّع في البوتاجاز.",
+   a:[["C",0,0,0],["H",T,T,T],["H",T,-T,-T],["H",-T,T,-T],["H",-T,-T,T]], b:[[0,1,1],[0,2,1],[0,3,1],[0,4,1]]},
+  {c:{N:1,H:3}, n:"النشادر", f:"NH₃", t:"ريحته نفّاذة أوي، وبيعملوا منه الأسمدة اللي بتغذّي الزرع.",
+   a:[["N",0,.3,0],["H",.94,-.1,0],["H",-.47,-.1,.82],["H",-.47,-.1,-.82]], b:[[0,1,1],[0,2,1],[0,3,1]]},
+  {c:{H:1,Cl:1}, n:"حمض الهيدروكلوريك", f:"HCl", t:"حمض قوي، وفيه منه جوّه معدتك عشان يهضم الأكل.",
+   a:[["H",-.75,0,0],["Cl",.6,0,0]], b:[[0,1,1]]},
+  {c:{H:1,F:1}, n:"فلوريد الهيدروجين", f:"HF", t:"حمض خطير جدًا بيقدر يدوّب الإزاز!",
+   a:[["H",-.55,0,0],["F",.45,0,0]], b:[[0,1,1]]},
+  {c:{Na:1,Cl:1}, n:"ملح الطعام", f:"NaCl", t:"الصوديوم والكلور لوحدهم خطيرين، بس لما يتّحدوا يعملوا الملح اللي على السفرة!", lattice:["Na","Cl"]},
+  {c:{K:1,Cl:1}, n:"كلوريد البوتاسيوم", f:"KCl", t:"ملح بيستخدموه بدل ملح الطعام، وفي أسمدة الزرع.", lattice:["K","Cl"]},
+  {c:{Ag:1,Cl:1}, n:"كلوريد الفضة", f:"AgCl", t:"ملح أبيض بيغمق لما النور يقع عليه، وكانوا بيستخدموه زمان في أفلام التصوير.", lattice:["Ag","Cl"]},
+  {c:{Mg:1,O:1}, n:"أكسيد الماغنسيوم", f:"MgO", t:"ده البودرة البيضا اللي بتطلع لما الماغنسيوم يولّع بنوره الأبيض القوي.", lattice:["Mg","O"]},
+  {c:{Ca:1,O:1}, n:"الجير الحي", f:"CaO", t:"لما تحط عليه مية بيسخن جامد، وبيستخدموه في البنا.", lattice:["Ca","O"]},
+  {c:{Cu:1,O:1}, n:"أكسيد النحاس", f:"CuO", t:"بودرة سودا، وهي اللي بتخلّي النحاس القديم يغمق.", lattice:["Cu","O"]},
+  {c:{Zn:1,O:1}, n:"أكسيد الزنك", f:"ZnO", t:"موجود في كريمات الشمس وكريمات الحفاضات بتاعة الأطفال.", lattice:["Zn","O"]},
+  {c:{Fe:2,O:3}, n:"الصدأ", f:"Fe₂O₃", t:"لما الحديد يقعد في الهوا والرطوبة بيتّحد مع الأكسجين ويحمرّ ويبقى صدأ.",
+   a:[["Fe",-1.2,0,0],["Fe",1.2,0,0],["O",0,.8,0],["O",-2.4,.8,0],["O",2.4,.8,0]], b:[[0,2,1],[1,2,1],[0,3,2],[1,4,2]]},
+  {c:{Al:2,O:3}, n:"أكسيد الألومنيوم", f:"Al₂O₃", t:"طبقة رفيعة جدًا منه بتحمي الألومنيوم من الصدأ، والياقوت الأحمر معمول منه!",
+   a:[["Al",-1.2,0,0],["Al",1.2,0,0],["O",0,.8,0],["O",-2.3,.8,0],["O",2.3,.8,0]], b:[[0,2,1],[1,2,1],[0,3,2],[1,4,2]]},
+  {c:{Na:1,O:1,H:1}, n:"الصودا الكاوية", f:"NaOH", t:"مادة قوية جدًا بيعملوا منها الصابون، وبتحرق الجلد فلازم نبعد عنها.",
+   a:[["Na",-1.6,0,0],["O",.3,0,0],["H",1.25,.3,0]], b:[[0,1,0],[1,2,1]]},
+  {c:{S:1,O:2}, n:"ثاني أكسيد الكبريت", f:"SO₂", t:"غاز بيطلع من البراكين وريحته خانقة.",
+   a:[["S",0,.35,0],["O",1.25,-.35,0],["O",-1.25,-.35,0]], b:[[0,1,2],[0,2,2]]},
+  {c:{N:1,O:2}, n:"ثاني أكسيد النيتروجين", f:"NO₂", t:"غاز لونه بني محمرّ، بيطلع من شكمانات العربيات.",
+   a:[["N",0,.35,0],["O",1.1,-.3,0],["O",-1.1,-.3,0]], b:[[0,1,2],[0,2,1]]},
+  {c:{H:2,S:1,O:4}, n:"حمض الكبريتيك", f:"H₂SO₄", t:"من أقوى الأحماض وأشهرها، وموجود في بطاريات العربيات.",
+   a:[["S",0,0,0],["O",.87,.87,.87],["O",-.87,-.87,.87],["O",.87,-.87,-.87],["O",-.87,.87,-.87],["H",1.6,-1.4,-.5],["H",-1.6,1.4,-.5]],
+   b:[[0,1,2],[0,2,2],[0,3,1],[0,4,1],[3,5,1],[4,6,1]]},
+  {c:{C:2,H:6,O:1}, n:"الكحول", f:"C₂H₅OH", t:"ده الكحول اللي في المطهّرات اللي بنعقّم بيها إيدينا.",
+   a:[["C",-.75,0,0],["C",.75,0,0],["O",1.3,1.2,0],["H",2.2,1.25,0],["H",-1.15,-.5,.9],["H",-1.15,-.5,-.9],["H",-1.15,1,0],["H",1.15,-.5,.9],["H",1.15,-.5,-.9]],
+   b:[[0,1,1],[1,2,1],[2,3,1],[0,4,1],[0,5,1],[0,6,1],[1,7,1],[1,8,1]]},
+  {c:{Ca:1,C:1,O:3}, n:"كربونات الكالسيوم", f:"CaCO₃", t:"ده الطباشير والرخام، والحجر الجيري اللي اتبنت بيه الأهرامات معمول منه!",
+   a:[["C",0,0,0],["O",1.28,0,0],["O",-.64,1.1,0],["O",-.64,-1.1,0],["Ca",-1.6,-2.4,0]], b:[[0,1,2],[0,2,1],[0,3,1],[3,4,0],[2,4,0]]},
+  {c:{Na:1,H:1,C:1,O:3}, n:"بيكربونات الصودا", f:"NaHCO₃", t:"دي البيكنج صودا اللي بتخلّي الكيك يعلى.",
+   a:[["C",0,0,0],["O",1.28,0,0],["O",-.64,1.1,0],["O",-.64,-1.1,0],["H",-1.5,1.6,0],["Na",-1.4,-2.5,0]], b:[[0,1,2],[0,2,1],[0,3,1],[2,4,1],[3,5,0]]}
+];
+const CUR_AUDIO = {"shakir":{"Ag1Cl1":[0,0.0,15.552],"Al2O3":[0,15.552,15.336],"Br1H1":[0,30.888,13.2],"Br2":[0,44.088,13.368],"C1Ca1O3":[0,57.456,17.184],"C1Cl4":[0,74.64,13.752],"C1H1Na1O3":[0,88.392,16.248],"C1H4":[0,104.64,12.168],"C1H4O1":[0,116.808,16.2],"C1O1":[1,0.0,16.968],"C1O2":[1,16.968,15.816],"C1S2":[1,32.784,12.6],"C1Si1":[1,45.384,14.688],"C2H2":[1,60.072,13.32],"C2H4":[1,73.392,12.36],"C2H6":[1,85.752,13.2],"C2H6O1":[1,98.952,14.4],"C6H6":[1,113.352,15.12],"Ca1O1":[2,0.0,14.28],"Cl1H1":[2,14.28,14.64],"Cl1H4N1":[2,28.92,15.768],"Cl1K1":[2,44.688,14.208],"Cl1Na1":[2,58.896,15.552],"Cl2":[2,74.448,13.536],"Cu1O1":[2,87.984,14.16],"F1H1":[2,102.144,13.368],"F2":[2,115.512,12.384],"Fe2O3":[3,0.0,13.944],"Fe3O4":[3,13.944,15.12],"H1I1":[3,29.064,12.24],"H1N1O3":[3,41.304,13.992],"H1Na1O1":[3,55.296,17.496],"H2":[3,72.792,14.016],"H2O1":[3,86.808,13.224],"H2O2":[3,100.032,14.76],"H2O4S1":[3,114.792,16.032],"H2S1":[4,0.0,12.648],"H3N1":[4,12.648,14.472],"H3P1":[4,27.12,11.76],"I2":[4,38.88,12.936],"Mg1O1":[4,51.816,14.808],"N1O2":[4,66.624,14.664],"N2":[4,81.288,13.392],"N2O1":[4,94.68,12.528],"O1Zn1":[4,107.208,13.704],"O2":[5,0.0,12.6],"O2S1":[5,12.6,12.792],"O2Si1":[5,25.392,12.72],"O3":[5,38.112,11.712],"P4":[5,49.824,13.056],"S8":[5,62.88,13.56]},"salma":{"Ag1Cl1":[0,0.0,18.192],"Al2O3":[0,18.192,17.76],"Br1H1":[0,35.952,15.408],"Br2":[0,51.36,15.144],"C1Ca1O3":[0,66.504,19.872],"C1Cl4":[0,86.376,15.936],"C1H1Na1O3":[0,102.312,19.152],"C1H4":[0,121.464,14.4],"C1H4O1":[0,135.864,19.176],"C1O1":[1,0.0,20.088],"C1O2":[1,20.088,18.624],"C1S2":[1,38.712,14.424],"C1Si1":[1,53.136,16.584],"C2H2":[1,69.72,14.952],"C2H4":[1,84.672,14.544],"C2H6":[1,99.216,14.976],"C2H6O1":[1,114.192,16.584],"C6H6":[1,130.776,17.328],"Ca1O1":[2,0.0,16.32],"Cl1H1":[2,16.32,16.8],"Cl1H4N1":[2,33.12,18.648],"Cl1K1":[2,51.768,16.104],"Cl1Na1":[2,67.872,17.424],"Cl2":[2,85.296,15.12],"Cu1O1":[2,100.416,16.152],"F1H1":[2,116.568,15.288],"F2":[2,131.856,13.656],"Fe2O3":[3,0.0,16.656],"Fe3O4":[3,16.656,16.44],"H1I1":[3,33.096,14.232],"H1N1O3":[3,47.328,16.44],"H1Na1O1":[3,63.768,20.304],"H2":[3,84.072,15.288],"H2O1":[3,99.36,15.288],"H2O2":[3,114.648,17.016],"H2O4S1":[3,131.664,18.096],"H2S1":[4,0.0,14.616],"H3N1":[4,14.616,16.8],"H3P1":[4,31.416,13.92],"I2":[4,45.336,14.64],"Mg1O1":[4,59.976,17.856],"N1O2":[4,77.832,16.968],"N2":[4,94.8,15.12],"N2O1":[4,109.92,14.976],"O1Zn1":[4,124.896,15.864],"O2":[5,0.0,14.424],"O2S1":[5,14.424,15.0],"O2Si1":[5,29.424,14.568],"O3":[5,43.992,13.368],"P4":[5,57.36,14.784],"S8":[5,72.144,15.576]}};
+const GEN_AUDIO = /*GEN_AUDIO*/{"shakir":{"Mn":{"Mn1O1":[0,2.517],"Mn1O2":[3.391,2.314],"Mn2O7":[6.643,2.349],"Mn1S1":[9.919,2.484],"Mn1Se1":[13.325,2.431],"Mn1Te1":[16.683,2.457],"F2Mn1":[20.052,2.416],"F4Mn1":[23.393,2.433],"Cl2Mn1":[26.736,2.415],"Br2Mn1":[30.065,2.416],"I2Mn1":[33.405,2.317]},"Fe":{"Fe1O1":[0,2.358],"Fe1S1":[3.219,2.338],"Fe2S3":[6.483,2.364],"Fe1Se1":[9.722,2.28],"Fe2Se3":[12.907,2.323],"Fe1Te1":[16.104,2.261],"Fe2Te3":[19.29,2.3],"F2Fe1":[22.507,2.266],"F3Fe1":[25.685,2.32],"Cl2Fe1":[28.886,2.261],"Cl3Fe1":[32.054,2.322],"Br2Fe1":[35.255,2.255],"Br3Fe1":[38.423,2.323],"Fe1I2":[41.622,2.185],"Fe1I3":[44.715,2.214]},"Rb":{"O1Rb2":[0,1.984],"Rb2S1":[2.812,1.944],"Rb2Se1":[5.625,1.978],"Rb2Te1":[8.457,1.919],"F1Rb1":[11.247,1.9],"Cl1Rb1":[14.012,1.946],"Br1Rb1":[16.816,1.92],"I1Rb1":[19.59,1.818],"H1Rb1":[22.274,1.877]},"K":{"K2O1":[0,2.058],"K2S1":[2.879,2.024],"K2Se1":[5.758,2.011],"K2Te1":[8.629,1.974],"F1K1":[11.46,1.934],"Br1K1":[14.262,1.95],"I1K1":[17.077,1.9],"K3P1":[19.84,1.922],"H1K1":[22.632,1.914]},"Li":{"Li2O1":[0,1.933],"Li2S1":[2.745,1.905],"Li2Se1":[5.508,1.865],"Li2Te1":[8.247,1.836],"F1Li1":[10.944,1.81],"Cl1Li1":[13.646,1.842],"Br1Li1":[16.369,1.839],"I1Li1":[19.079,1.768],"Li3N1":[21.713,1.793],"Li3P1":[24.369,1.796],"H1Li1":[27.042,1.795]},"Fr":{"Fr2O1":[0,1.977],"Fr2S1":[2.786,2.061],"Fr2Se1":[5.732,2.082],"Fr2Te1":[8.692,2.069],"F1Fr1":[11.63,2.007],"Cl1Fr1":[14.513,2.046],"Br1Fr1":[17.422,1.859],"Fr1I1":[20.153,1.973]},"Na":{"Na2O1":[0,1.931],"Na2S1":[2.747,1.889],"Na2Se1":[5.507,1.867],"Na2Te1":[8.246,1.845],"F1Na1":[10.946,1.84],"Br1Na1":[13.643,1.813],"I1Na1":[16.313,1.739],"Na3P1":[18.931,1.786],"H1Na1":[21.589,1.791]},"Ca":{"Ca1S1":[0,2.209],"Ca1Se1":[3.02,1.973],"Ca1Te1":[5.866,1.97],"Ca1F2":[8.708,1.95],"Ca1Cl2":[11.53,1.945],"Br2Ca1":[14.341,1.917],"Ca1I2":[17.131,1.863],"Ca3N2":[19.88,1.864],"Ca3P2":[22.631,1.9],"Ca1H2":[25.406,1.89]},"Cs":{"Cs2O1":[0,1.946],"Cs2S1":[2.761,1.896],"Cs2Se1":[5.533,1.902],"Cs2Te1":[8.298,1.87],"Cs1F1":[11.025,1.867],"Cl1Cs1":[13.75,1.865],"Br1Cs1":[16.475,1.812],"Cs1I1":[19.168,1.775],"Cs1H1":[21.815,1.817]},"Y":{"O3Y2":[0,1.933],"S3Y2":[2.749,1.915],"Se3Y2":[5.511,1.892],"Te3Y2":[8.249,1.868],"F3Y1":[10.975,1.845],"Cl3Y1":[13.691,1.86],"Br3Y1":[16.401,1.836],"I3Y1":[19.1,1.779]},"La":{"La2O3":[0,1.984],"La2S3":[2.813,1.946],"La2Se3":[5.616,1.918],"La2Te3":[8.394,1.89],"F3La1":[11.144,1.839],"Cl3La1":[13.886,1.886],"Br3La1":[16.635,1.817],"I3La1":[19.354,1.785]},"Be":{"Be1O1":[0,1.953],"Be1S1":[2.774,1.922],"Be1Se1":[5.55,1.916],"Be1Te1":[8.326,1.9],"Be1F2":[11.091,1.897],"Be1Cl2":[13.855,1.917],"Be1Br2":[16.646,1.861],"Be1I2":[19.373,1.786],"Be3N2":[22.029,1.812],"Be1H2":[24.713,1.866]},"Ce":{"Ce2O3":[0,2.458],"Ce1O2":[3.288,2.221],"Ce2S3":[6.417,2.407],"Ce2Se3":[9.696,2.39],"Ce2Te3":[12.96,2.368],"Ce1F3":[16.209,2.337],"Ce1F4":[19.418,2.325],"Ce1Cl3":[22.66,2.371],"Br3Ce1":[25.896,2.321],"Ce1I3":[29.093,2.285]},"Sc":{"O3Sc2":[0,2.093],"S3Sc2":[2.906,2.008],"Sc2Se3":[5.773,2.022],"Sc2Te3":[8.68,2.0],"F3Sc1":[11.552,1.971],"Cl3Sc1":[14.412,1.992],"Br3Sc1":[17.279,1.971],"I3Sc1":[20.133,1.868]},"Sr":{"O1Sr1":[0,2.143],"S1Sr1":[2.985,2.116],"Se1Sr1":[5.982,2.134],"Sr1Te1":[8.997,2.109],"F2Sr1":[11.974,2.077],"Cl2Sr1":[14.921,2.106],"Br2Sr1":[17.894,2.028],"I2Sr1":[20.816,1.954],"N2Sr3":[23.659,1.998],"P2Sr3":[26.541,2.049],"H2Sr1":[29.46,2.029]},"Sm":{"O3Sm2":[0,2.014],"S3Sm2":[2.827,1.996],"Se3Sm2":[5.677,1.967],"Sm2Te3":[8.512,1.918],"F3Sm1":[11.3,1.941],"Cl3Sm1":[14.107,1.913],"Br3Sm1":[16.909,1.887],"I3Sm1":[19.66,1.839]},"Mg":{"Mg1S1":[0,2.214],"Mg1Se1":[3.045,2.026],"Mg1Te1":[5.943,2.003],"F2Mg1":[8.8,1.969],"Cl2Mg1":[11.644,2.001],"Br2Mg1":[14.501,2.001],"I2Mg1":[17.352,1.893],"Mg3N2":[20.117,1.948],"Mg3P2":[22.933,1.958],"H2Mg1":[25.752,1.952]},"Pr":{"O3Pr2":[0,2.259],"Pr2S3":[3.089,2.232],"Pr2Se3":[6.194,2.338],"Pr2Te3":[9.406,2.32],"F3Pr1":[12.591,2.258],"Cl3Pr1":[15.711,2.286],"Br3Pr1":[18.869,2.157],"I3Pr1":[21.896,2.073]},"Ra":{"O1Ra1":[0,1.876],"Ra1S1":[2.707,1.824],"Ra1Se1":[5.391,1.843],"Ra1Te1":[8.091,1.798],"F2Ra1":[10.754,1.81],"Cl2Ra1":[13.436,1.801],"Br2Ra1":[16.101,1.776],"I2Ra1":[18.748,1.703]},"Pm":{"O3Pm2":[0,2.14],"Pm2S3":[2.971,2.082],"Pm2Se3":[5.915,2.066],"Pm2Te3":[8.839,2.061],"F3Pm1":[11.774,2.054],"Cl3Pm1":[14.698,2.056],"Br3Pm1":[17.619,2.028],"I3Pm1":[20.515,1.95]},"Gd":{"Gd2O3":[0,2.123],"Gd2S3":[2.959,2.059],"Gd2Se3":[5.891,2.06],"Gd2Te3":[8.814,2.02],"F3Gd1":[11.708,2.024],"Cl3Gd1":[14.618,2.004],"Br3Gd1":[17.501,1.998],"Gd1I3":[20.369,1.92]},"Nd":{"Nd2O3":[0,2.109],"Nd2S3":[2.935,2.068],"Nd2Se3":[5.864,2.049],"Nd2Te3":[8.786,2.051],"F3Nd1":[11.7,2.046],"Cl3Nd1":[14.623,2.049],"Br3Nd1":[17.554,2.02],"I3Nd1":[20.452,1.893]},"Tb":{"O3Tb2":[0,1.954],"S3Tb2":[2.786,1.947],"Se3Tb2":[5.602,1.922],"Tb2Te3":[8.391,1.903],"F3Tb1":[11.168,1.868],"Cl3Tb1":[13.925,1.899],"Br3Tb1":[16.692,1.865],"I3Tb1":[19.422,1.798]},"Ba":{"Ba1O1":[0,1.88],"Ba1S1":[2.708,1.835],"Ba1Se1":[5.405,1.792],"Ba1Te1":[8.066,1.768],"Ba1F2":[10.698,1.757],"Ba1Cl2":[13.331,1.763],"Ba1Br2":[15.966,1.732],"Ba1I2":[18.573,1.672],"Ba3N2":[21.107,1.705],"Ba3P2":[23.672,1.743],"Ba1H2":[26.279,1.737]},"Ho":{"Ho2O3":[0,2.002],"Ho2S3":[2.816,1.977],"Ho2Se3":[5.644,1.94],"Ho2Te3":[8.434,1.936],"F3Ho1":[11.225,1.915],"Cl3Ho1":[14.016,1.939],"Br3Ho1":[16.819,1.885],"Ho1I3":[19.568,1.817]},"Er":{"Er2O3":[0,1.977],"Er2S3":[2.791,1.915],"Er2Se3":[5.577,1.875],"Er2Te3":[8.303,1.894],"Er1F3":[11.054,1.889],"Cl3Er1":[13.806,1.882],"Br3Er1":[16.555,1.861],"Er1I3":[19.279,1.79]},"Tm":{"O3Tm2":[0,1.936],"S3Tm2":[2.748,1.915],"Se3Tm2":[5.524,1.87],"Te3Tm2":[8.262,1.836],"F3Tm1":[10.961,1.815],"Cl3Tm1":[13.648,1.863],"Br3Tm1":[16.371,1.813],"I3Tm1":[19.052,1.744]},"Yb":{"O3Yb2":[0,2.054],"S3Yb2":[2.878,2.025],"Se3Yb2":[5.772,1.994],"Te3Yb2":[8.628,2.001],"F3Yb1":[11.497,1.972],"Cl3Yb1":[14.343,1.973],"Br3Yb1":[17.186,1.946],"I3Yb1":[19.987,1.869]},"Dy":{"Dy2O3":[0,2.204],"Dy2S3":[3.049,2.169],"Dy2Se3":[6.117,2.15],"Dy2Te3":[9.169,2.127],"Dy1F3":[12.181,2.128],"Cl3Dy1":[15.181,2.109],"Br3Dy1":[18.183,2.11],"Dy1I3":[21.169,2.024]},"Lu":{"Lu2O3":[0,2.043],"Lu2S3":[2.865,1.993],"Lu2Se3":[5.733,1.962],"Lu2Te3":[8.575,1.948],"F3Lu1":[11.379,1.918],"Cl3Lu1":[14.17,1.95],"Br3Lu1":[16.999,1.922],"I3Lu1":[19.802,1.868]},"Pa":{"O5Pa2":[0,2.139],"Pa2S5":[2.982,2.107],"F5Pa1":[5.958,2.073],"Cl5Pa1":[8.906,2.108],"Br5Pa1":[11.879,2.054]},"Np":{"Np1O2":[0,2.037],"Np1S2":[2.851,2.006],"Np1Se2":[5.719,1.999],"Np1Te2":[8.576,1.968],"F4Np1":[11.405,1.951],"Cl4Np1":[14.227,1.962],"Br4Np1":[17.057,1.944],"I4Np1":[19.869,1.895]},"Eu":{"Eu1O1":[0,2.512],"Eu2O3":[3.379,2.314],"Eu1S1":[6.591,2.452],"Eu2S3":[9.959,2.584],"Eu1Se1":[13.418,2.456],"Eu2Se3":[16.787,2.485],"Eu1Te1":[20.145,2.473],"Eu2Te3":[23.528,2.464],"Eu1F2":[26.898,2.411],"Eu1F3":[30.224,2.424],"Cl2Eu1":[33.545,2.458],"Cl3Eu1":[36.909,2.477],"Br2Eu1":[40.268,2.386],"Br3Eu1":[43.568,2.426],"Eu1I2":[46.875,2.361],"Eu1I3":[50.149,2.417]},"Ac":{"Ac2O3":[0,2.011],"Ac2S3":[2.825,2.005],"Ac2Se3":[5.694,1.997],"Ac2Te3":[8.551,1.949],"Ac1F3":[11.367,1.926],"Ac1Cl3":[14.155,1.955],"Ac1Br3":[16.977,1.948],"Ac1I3":[19.777,1.865]},"Cm":{"Cm2O3":[0,1.903],"Cm2S3":[2.72,1.917],"Cm2Se3":[5.498,1.867],"Cm2Te3":[8.234,1.846],"Cm1F3":[10.947,1.799],"Cl3Cm1":[13.626,1.835],"Br3Cm1":[16.33,1.796],"Cm1I3":[19.001,1.758]},"Pu":{"O2Pu1":[0,2.112],"Pu1S2":[2.93,2.082],"Pu1Se2":[5.889,2.053],"Pu1Te2":[8.813,2.048],"F4Pu1":[11.737,2.026],"Cl4Pu1":[14.632,1.995],"Br4Pu1":[17.539,2.012],"I4Pu1":[20.421,1.943]},"Th":{"O2Th1":[0,1.897],"S2Th1":[2.719,1.902],"Se2Th1":[5.481,1.8],"Te2Th1":[8.139,1.837],"F4Th1":[10.837,1.818],"Cl4Th1":[13.525,1.843],"Br4Th1":[16.22,1.815],"I4Th1":[18.906,1.74]},"Bk":{"Bk2O3":[0,2.059],"Bk2S3":[2.864,2.029],"Bk2Se3":[5.746,1.974],"Bk2Te3":[8.591,1.98],"Bk1F3":[11.432,1.948],"Bk1Cl3":[14.237,1.967],"Bk1Br3":[17.064,1.92],"Bk1I3":[19.855,1.87]},"Am":{"Am2O3":[0,2.1],"Am2S3":[2.918,2.012],"Am2Se3":[5.786,2.025],"Am2Te3":[8.666,2.007],"Am1F3":[11.539,1.972],"Am1Cl3":[14.367,2.023],"Am1Br3":[17.249,1.999],"Am1I3":[20.103,1.906]},"Cf":{"Cf2O3":[0,2.157],"Cf2S3":[2.998,2.131],"Cf2Se3":[6.011,2.075],"Cf2Te3":[8.986,2.054],"Cf1F3":[11.949,2.053],"Cf1Cl3":[14.896,2.01],"Br3Cf1":[17.814,2.059],"Cf1I3":[20.764,1.975]},"U":{"O2U1":[0,2.496],"O3U1":[3.393,2.346],"S2U1":[6.658,2.414],"Se2U1":[10.026,2.458],"Te2U1":[13.396,2.47],"F4U1":[16.78,2.399],"F6U1":[20.095,2.43],"Cl4U1":[23.427,2.424],"Br4U1":[26.769,2.459],"I4U1":[30.136,2.349]},"Zr":{"O2Zr1":[0,2.092],"S2Zr1":[2.917,2.023],"Se2Zr1":[5.824,2.047],"Te2Zr1":[8.746,1.997],"F4Zr1":[11.603,1.969],"Cl4Zr1":[14.434,1.999],"Br4Zr1":[17.302,1.947],"I4Zr1":[20.129,1.92]},"Nb":{"Nb2O5":[0,1.94],"Nb2S5":[2.764,1.896],"F5Nb1":[5.541,1.838],"Cl5Nb1":[8.253,1.861],"Br5Nb1":[10.99,1.84]},"Ta":{"O5Ta2":[0,1.981],"S5Ta2":[2.79,1.899],"F5Ta1":[5.552,1.865],"Cl5Ta1":[8.291,1.884],"Br5Ta1":[11.041,1.886]},"Hf":{"Hf1O2":[0,1.951],"Hf1S2":[2.764,1.896],"Hf1Se2":[5.514,1.896],"Hf1Te2":[8.266,1.86],"F4Hf1":[10.989,1.837],"Cl4Hf1":[13.687,1.861],"Br4Hf1":[16.403,1.84],"Hf1I4":[19.095,1.757]},"Ti":{"O2Ti1":[0,1.987],"S2Ti1":[2.801,1.969],"Se2Ti1":[5.652,1.943],"Te2Ti1":[8.47,1.918],"F4Ti1":[11.262,1.901],"Cl4Ti1":[14.027,1.919],"Br4Ti1":[16.804,1.897],"I4Ti1":[19.579,1.843],"N4Ti3":[22.291,1.864]},"Es":{"Es2O3":[0,2.223],"Es2S3":[3.052,2.181],"Es2Se3":[6.102,2.127],"Es2Te3":[9.115,2.134],"Es1F3":[12.114,2.116],"Cl3Es1":[15.088,2.13],"Br3Es1":[18.09,2.103],"Es1I3":[21.064,2.011]},"Tc":{"O7Tc2":[0,2.043]},"V":{"O3V2":[0,2.555],"O5V2":[3.382,2.422],"S3V2":[6.695,2.528],"Se3V2":[10.129,2.482],"Te3V2":[13.525,2.53],"F3V1":[16.92,2.478],"Cl3V1":[20.263,2.473],"Br3V1":[23.632,2.481],"I3V1":[26.988,2.375]},"Re":{"O7Re2":[0,1.899],"F7Re1":[2.721,1.848]},"Os":{"O2Os1":[0,2.458],"O4Os1":[3.354,2.232],"F4Os1":[6.433,2.363]},"Cr":{"Cr2O3":[0,2.341],"Cr1O3":[3.183,2.155],"Cr2S3":[6.248,2.376],"Cr2Se3":[9.486,2.29],"Cr2Te3":[12.685,2.271],"Cr1F3":[15.87,2.243],"Cl3Cr1":[19.028,2.244],"Br3Cr1":[22.185,2.264],"Cr1I3":[25.331,2.162]},"Pd":{"O1Pd1":[0,1.986],"Pd1S1":[2.801,1.953],"Pd1Se1":[5.601,1.921],"Pd1Te1":[8.392,1.997],"F2Pd1":[11.25,1.965],"Cl2Pd1":[14.083,1.916],"Br2Pd1":[16.858,1.898],"I2Pd1":[19.619,1.823]},"Co":{"Co1O1":[0,1.86],"Co1S1":[2.68,1.863],"Co1Se1":[5.387,1.82],"Co1Te1":[8.06,1.792],"Co1F2":[10.705,1.807],"Cl2Co1":[13.35,1.8],"Br2Co1":[15.997,1.763],"Co1I2":[18.617,1.723]},"Ni":{"Ni1O1":[0,1.846],"Ni1S1":[2.725,1.845],"Ni1Se1":[5.471,1.774],"Ni1Te1":[8.159,1.803],"F2Ni1":[10.87,1.801],"Cl2Ni1":[13.584,1.792],"Br2Ni1":[16.281,1.753],"I2Ni1":[18.95,1.696]},"Rh":{"O3Rh2":[0,1.855],"Rh2S3":[2.68,1.847],"Rh2Se3":[5.403,1.821],"Rh2Te3":[8.088,1.791],"F3Rh1":[10.746,1.787],"Cl3Rh1":[13.393,1.793],"Br3Rh1":[16.051,1.765],"I3Rh1":[18.681,1.704]},"Ir":{"Ir2O3":[0,2.504],"Ir1O2":[3.327,2.301],"Ir2S3":[6.548,2.479],"Ir2Se3":[9.905,2.47],"Ir2Te3":[13.274,2.48],"F3Ir1":[16.656,2.422],"F4Ir1":[19.949,2.419],"Cl3Ir1":[23.28,2.413],"Br3Ir1":[26.596,2.418],"I3Ir1":[29.885,2.309]},"Mo":{"Mo1O2":[0,2.618],"Mo1O3":[3.484,2.427],"Mo1S2":[6.814,2.586],"Mo1Se2":[10.315,2.591],"Mo1Te2":[13.817,2.59],"F4Mo1":[17.316,2.564],"F6Mo1":[20.79,2.572],"Cl4Mo1":[24.264,2.581],"Br4Mo1":[27.764,2.54],"I4Mo1":[31.215,2.415]},"Ag":{"Ag2O1":[0,1.832],"Ag2S1":[2.714,1.777],"Ag2Se1":[5.408,1.731],"Ag2Te1":[8.053,1.734],"Ag1F1":[10.682,1.724],"Ag1Br1":[13.316,1.694],"Ag1I1":[15.909,1.604]},"Zn":{"S1Zn1":[0,1.966],"Se1Zn1":[2.75,1.751],"Te1Zn1":[5.33,1.733],"F2Zn1":[7.897,1.717],"Cl2Zn1":[10.438,1.745],"Br2Zn1":[13.015,1.735],"I2Zn1":[15.58,1.634],"P2Zn3":[18.046,1.717]},"Ru":{"O3Ru2":[0,2.564],"O2Ru1":[3.392,2.319],"Ru2S3":[6.656,2.477],"Ru2Se3":[10.037,2.496],"Ru2Te3":[13.405,2.49],"F3Ru1":[16.789,2.421],"F4Ru1":[20.09,2.402],"Cl3Ru1":[23.409,2.469],"Br3Ru1":[26.749,2.416],"I3Ru1":[30.066,2.376]},"W":{"O2W1":[0,2.453],"O3W1":[3.325,2.31],"S2W1":[6.563,2.396],"Se2W1":[9.893,2.38],"Te2W1":[13.21,2.366],"F4W1":[16.496,2.346],"F6W1":[19.761,2.441],"Cl4W1":[23.13,2.311],"Cl6W1":[26.406,2.44],"Br4W1":[29.749,2.344],"I4W1":[33.011,2.259]},"B":{"B2O3":[0,2.322],"B2S3":[3.154,2.267],"B1F3":[6.301,2.154],"B1Cl3":[9.367,2.22],"B1Br3":[12.472,2.158],"B1I3":[15.537,2.101],"B1N1":[18.521,1.732]},"Hg":{"Hg1O1":[0,1.751],"Hg1S1":[2.628,1.689],"Hg1Se1":[5.246,1.665],"Hg1Te1":[7.84,1.634],"F2Hg1":[10.407,1.646],"Cl2Hg1":[12.978,1.641],"Br2Hg1":[15.553,1.612],"Hg1I2":[18.094,1.539]},"Si":{"S2Si1":[0,2.573],"F4Si1":[3.389,2.32],"Cl4Si1":[6.572,2.343],"Br4Si1":[9.784,2.321],"I4Si1":[12.985,2.238],"N4Si3":[16.089,1.872]},"Cd":{"Cd1O1":[0,1.935],"Cd1S1":[2.764,1.901],"Cd1Se1":[5.537,1.894],"Cd1Te1":[8.29,1.885],"Cd1F2":[11.03,1.84],"Cd1Cl2":[13.755,1.885],"Br2Cd1":[16.517,1.843],"Cd1I2":[19.225,1.795]},"Ge":{"Ge1O2":[0,2.484],"Ge1S2":[3.313,2.402],"F4Ge1":[6.588,2.319],"Cl4Ge1":[9.785,2.318],"Br4Ge1":[12.984,2.351],"Ge1I4":[16.209,2.258]},"Al":{"Al2S3":[0,2.297],"Al2Se3":[3.157,2.041],"Al2Te3":[6.067,2.023],"Al1F3":[8.962,1.999],"Al1Cl3":[11.844,2.02],"Al1Br3":[14.742,1.996],"Al1I3":[17.61,1.904],"Al1N1":[20.39,1.91],"Al1P1":[23.175,1.944]},"Cu":{"Cu2O1":[0,2.396],"Cu2S1":[3.224,2.365],"Cu1S1":[6.495,2.324],"Cu2Se1":[9.733,2.319],"Cu1Se1":[12.958,2.254],"Cu2Te1":[16.119,2.322],"Cu1Te1":[19.358,2.278],"Cu1F1":[22.541,2.323],"Cu1F2":[25.756,2.252],"Cl1Cu1":[28.914,2.317],"Cl2Cu1":[32.125,2.238],"Br1Cu1":[35.272,2.27],"Br2Cu1":[38.454,2.227],"Cu1I1":[41.589,2.207],"Cu1I2":[44.707,2.148]},"Ga":{"Ga2O3":[0,1.875],"Ga2S3":[2.695,1.848],"Ga2Se3":[5.403,1.816],"Ga2Te3":[8.088,1.797],"F3Ga1":[10.75,1.791],"Cl3Ga1":[13.423,1.81],"Br3Ga1":[16.108,1.791],"Ga1I3":[18.763,1.731],"Ga1N1":[21.357,1.709],"Ga1P1":[23.937,1.766]},"In":{"In2O3":[0,1.984],"In2S3":[2.821,1.914],"In2Se3":[5.602,1.892],"In2Te3":[8.356,1.866],"F3In1":[11.094,1.884],"Cl3In1":[13.845,1.871],"Br3In1":[16.584,1.839],"I3In1":[19.294,1.788],"In1P1":[21.949,1.81]},"N":{"N1O1":[0,2.472],"N2O5":[3.324,2.323]},"Au":{"Au2O1":[0,2.356],"Au2O3":[3.191,2.153],"Au2S1":[6.233,2.301],"Au2S3":[9.459,2.322],"Au2Se1":[12.668,2.228],"Au2Se3":[15.813,2.221],"Au2Te1":[18.96,2.216],"Au2Te3":[22.093,2.213],"Au1F1":[25.226,2.221],"Au1F3":[28.37,2.183],"Au1Cl1":[31.466,2.216],"Au1Cl3":[34.596,2.259],"Au1Br1":[37.73,2.182],"Au1Br3":[40.836,2.19],"Au1I1":[43.945,2.15],"Au1I3":[46.979,2.11]},"Sb":{"O3Sb2":[0,2.46],"O5Sb2":[3.283,2.227],"S3Sb2":[6.38,2.424],"S5Sb2":[9.674,2.42],"F3Sb1":[12.96,2.323],"F5Sb1":[16.145,2.315],"Cl3Sb1":[19.345,2.322],"Cl5Sb1":[22.556,2.369],"Br3Sb1":[25.793,2.314],"Br5Sb1":[28.992,2.308],"I3Sb1":[32.201,2.22]},"Se":{"O2Se1":[0,2.386],"F4Se1":[3.219,2.312]},"P":{"O3P2":[0,2.301],"O5P2":[3.244,2.073],"P2S3":[6.3,2.285],"P2S5":[9.55,2.271],"F3P1":[12.788,2.191],"F5P1":[15.934,2.188],"Cl3P1":[19.115,2.236],"Cl5P1":[22.314,2.182],"Br3P1":[25.486,2.21],"Br5P1":[28.684,2.188],"I3P1":[31.868,2.072]},"Te":{"O2Te1":[0,2.474],"F4Te1":[3.282,2.291]},"Bi":{"Bi2O3":[0,1.766],"Bi2S3":[2.563,1.76],"Bi2Se3":[5.167,1.7],"Bi2Te3":[7.735,1.684],"Bi1F3":[10.262,1.668],"Bi1Cl3":[12.774,1.68],"Bi1Br3":[15.299,1.653],"Bi1I3":[17.799,1.569]},"Br":{"Br2O1":[0,1.826]},"S":{"O3S1":[0,2.211],"F4S1":[3.048,2.014],"F6S1":[5.931,2.044]},"Kr":{"F2Kr1":[0,2.516]},"I":{"I2O5":[0,2.119],"F5I1":[2.998,2.115]},"Xe":{"F2Xe1":[0,2.35],"F4Xe1":[3.181,2.204],"F6Xe1":[6.26,2.237]},"Cl":{"Cl2O1":[0,1.736],"Cl1O2":[2.679,1.927],"Cl2O7":[5.574,1.973]},"Pt":{"O1Pt1":[0,2.408],"O2Pt1":[3.285,2.202],"Pt1S1":[6.444,2.418],"Pt1S2":[9.773,2.42],"Pt1Se1":[13.104,2.359],"Pt1Se2":[16.379,2.347],"Pt1Te1":[19.671,2.348],"Pt1Te2":[22.946,2.38],"F2Pt1":[26.241,2.326],"F4Pt1":[29.48,2.301],"Cl2Pt1":[32.725,2.323],"Cl4Pt1":[35.965,2.286],"Br2Pt1":[39.199,2.337],"Br4Pt1":[42.452,2.353],"I2Pt1":[45.714,2.273],"I4Pt1":[48.9,2.265]},"As":{"As2O3":[0,2.392],"As2O5":[3.351,2.182],"As2S3":[6.55,2.354],"As2S5":[9.893,2.375],"As1F3":[13.238,2.303],"As1F5":[16.503,2.295],"As1Cl3":[19.779,2.31],"As1Cl5":[23.043,2.297],"As1Br3":[26.332,2.3],"As1Br5":[29.597,2.282],"As1I3":[32.86,2.168]},"Pb":{"O1Pb1":[0,2.369],"O2Pb1":[3.258,2.156],"Pb1S1":[6.338,2.324],"Pb1S2":[9.62,2.325],"Pb1Se1":[12.853,2.308],"Pb1Se2":[16.088,2.316],"Pb1Te1":[19.328,2.284],"Pb1Te2":[22.539,2.258],"F2Pb1":[25.766,2.293],"F4Pb1":[28.988,2.299],"Cl2Pb1":[32.209,2.261],"Cl4Pb1":[35.396,2.286],"Br2Pb1":[38.608,2.244],"Br4Pb1":[41.78,2.267],"I2Pb1":[44.976,2.185],"I4Pb1":[48.083,2.181]},"Sn":{"O1Sn1":[0,2.377],"O2Sn1":[3.234,2.193],"S1Sn1":[6.353,2.361],"S2Sn1":[9.644,2.388],"Se1Sn1":[12.946,2.314],"Se2Sn1":[16.182,2.304],"Sn1Te1":[19.434,2.325],"Sn1Te2":[22.686,2.315],"F2Sn1":[25.912,2.322],"F4Sn1":[29.159,2.296],"Cl2Sn1":[32.373,2.306],"Cl4Sn1":[35.596,2.313],"Br2Sn1":[38.822,2.293],"Br4Sn1":[42.046,2.318],"I2Sn1":[45.269,2.203],"I4Sn1":[48.388,2.22]},"Tl":{"O1Tl2":[0,2.482],"O3Tl2":[3.339,2.206],"S1Tl2":[6.418,2.452],"S3Tl2":[9.788,2.454],"Se1Tl2":[13.118,2.498],"Se3Tl2":[16.526,2.314],"Te1Tl2":[19.751,2.325],"Te3Tl2":[22.989,2.332],"F1Tl1":[26.229,2.414],"F3Tl1":[29.559,2.283],"Cl1Tl1":[32.759,2.391],"Cl3Tl1":[36.061,2.285],"Br1Tl1":[39.257,2.272],"Br3Tl1":[42.442,2.327],"I1Tl1":[45.641,2.314],"I3Tl1":[48.865,2.205]}},"salma":{"Mn":{"Mn1O1":[0,2.812],"Mn1O2":[3.683,2.513],"Mn2O7":[7.127,2.556],"Mn1S1":[10.614,2.806],"Mn1Se1":[14.327,2.69],"Mn1Te1":[17.956,2.724],"F2Mn1":[21.605,2.666],"F4Mn1":[25.196,2.648],"Cl2Mn1":[28.772,2.656],"Br2Mn1":[32.328,2.661],"I2Mn1":[35.919,2.566]},"Fe":{"Fe1O1":[0,2.57],"Fe1S1":[3.431,2.643],"Fe2S3":[6.985,2.676],"Fe1Se1":[10.576,2.446],"Fe2Se3":[13.946,2.521],"Fe1Te1":[17.397,2.556],"Fe2Te3":[20.859,2.599],"F2Fe1":[24.368,2.546],"F3Fe1":[27.818,2.536],"Cl2Fe1":[31.273,2.394],"Cl3Fe1":[34.582,2.494],"Br2Fe1":[37.979,2.42],"Br3Fe1":[41.307,2.451],"Fe1I2":[44.679,2.329],"Fe1I3":[47.916,2.388]},"K":{"K2O1":[0,2.206],"K2S1":[3.106,2.248],"K2Se1":[6.3,2.143],"K2Te1":[9.381,2.184],"F1K1":[12.47,2.145],"Br1K1":[15.539,2.056],"I1K1":[18.541,2.026],"K3P1":[21.502,2.128],"H1K1":[24.559,2.13]},"Li":{"Li2O1":[0,2.093],"Li2S1":[2.954,2.124],"Li2Se1":[6.01,1.991],"Li2Te1":[8.932,1.995],"F1Li1":[11.852,1.962],"Cl1Li1":[14.758,1.894],"Br1Li1":[17.578,1.912],"I1Li1":[20.436,1.86],"Li3N1":[23.212,1.942],"Li3P1":[26.11,1.916],"H1Li1":[28.963,1.918]},"Na":{"Na2O1":[0,2.071],"Na2S1":[2.933,2.107],"Na2Se1":[5.968,1.97],"Na2Te1":[8.865,1.969],"F1Na1":[11.759,1.965],"Br1Na1":[14.644,1.89],"I1Na1":[17.462,1.871],"Na3P1":[20.264,1.915],"H1Na1":[23.084,1.909]},"Fr":{"Fr2O1":[0,2.136],"Fr2S1":[2.997,2.341],"Fr2Se1":[6.26,2.246],"Fr2Te1":[9.433,2.252],"F1Fr1":[12.603,2.246],"Cl1Fr1":[15.782,2.165],"Br1Fr1":[18.856,1.982],"Fr1I1":[21.792,2.126]},"Be":{"Be1O1":[0,2.196],"Be1S1":[3.061,2.289],"Be1Se1":[6.262,2.126],"Be1Te1":[9.316,2.115],"Be1F2":[12.372,2.044],"Be1Cl2":[15.326,2.012],"Be1Br2":[18.26,2.036],"Be1I2":[21.221,1.962],"Be3N2":[24.098,2.062],"Be1H2":[27.115,2.038]},"Cs":{"Cs2O1":[0,2.127],"Cs2S1":[3.005,2.124],"Cs2Se1":[6.036,2.016],"Cs2Te1":[8.983,2.033],"Cs1F1":[11.93,2.036],"Cl1Cs1":[14.872,1.934],"Br1Cs1":[17.706,1.913],"Cs1I1":[20.569,1.913],"Cs1H1":[23.4,1.946]},"Ca":{"Ca1S1":[0,2.509],"Ca1Se1":[3.378,2.199],"Ca1Te1":[6.471,2.172],"Ca1F2":[9.574,2.188],"Ca1Cl2":[12.677,2.148],"Br2Ca1":[15.737,2.154],"Ca1I2":[18.812,2.025],"Ca3N2":[21.765,2.17],"Ca3P2":[24.878,2.118],"Ca1H2":[27.894,2.089]},"Sc":{"O3Sc2":[0,2.274],"S3Sc2":[3.179,2.264],"Sc2Se3":[6.372,2.171],"Sc2Te3":[9.472,2.183],"F3Sc1":[12.608,2.148],"Cl3Sc1":[15.679,2.072],"Br3Sc1":[18.682,2.106],"I3Sc1":[21.758,2.083]},"Mg":{"Mg1S1":[0,2.519],"Mg1Se1":[3.437,2.206],"Mg1Te1":[6.562,2.191],"F2Mg1":[9.708,2.15],"Cl2Mg1":[12.797,2.113],"Br2Mg1":[15.841,2.097],"I2Mg1":[18.908,2.032],"Mg3N2":[21.881,2.149],"Mg3P2":[24.982,2.163],"H2Mg1":[28.072,2.08]},"Ce":{"Ce2O3":[0,2.745],"Ce1O2":[3.598,2.487],"Ce2S3":[6.979,2.688],"Ce2Se3":[10.575,2.606],"Ce2Te3":[14.102,2.587],"Ce1F3":[17.59,2.574],"Ce1F4":[21.053,2.585],"Ce1Cl3":[24.548,2.59],"Br3Ce1":[28.03,2.509],"Ce1I3":[31.451,2.496]},"Rb":{"O1Rb2":[0,2.228],"Rb2S1":[3.1,2.228],"Rb2Se1":[6.283,2.136],"Rb2Te1":[9.351,2.136],"F1Rb1":[12.421,2.057],"Cl1Rb1":[15.404,2.047],"Br1Rb1":[18.365,2.025],"I1Rb1":[21.319,2.022],"H1Rb1":[24.284,2.05]},"Ba":{"Ba1O1":[0,2.07],"Ba1S1":[2.967,2.113],"Ba1Se1":[6.024,2.031],"Ba1Te1":[9.01,1.983],"Ba1F2":[11.944,1.987],"Ba1Cl2":[14.864,1.888],"Ba1Br2":[17.683,1.904],"Ba1I2":[20.526,1.856],"Ba3N2":[23.331,1.956],"Ba3P2":[26.249,1.925],"Ba1H2":[29.1,1.908]},"Y":{"O3Y2":[0,2.08],"S3Y2":[2.971,2.147],"Se3Y2":[6.038,2.066],"Te3Y2":[9.036,2.001],"F3Y1":[11.972,2.022],"Cl3Y1":[14.943,1.953],"Br3Y1":[17.815,1.91],"I3Y1":[20.662,1.913]},"Sm":{"O3Sm2":[0,2.253],"S3Sm2":[3.134,2.244],"Se3Sm2":[6.313,2.165],"Sm2Te3":[9.403,2.169],"F3Sm1":[12.507,2.164],"Cl3Sm1":[15.614,2.098],"Br3Sm1":[18.646,2.104],"I3Sm1":[21.692,2.027]},"Pr":{"O3Pr2":[0,2.516],"Pr2S3":[3.413,2.62],"Pr2Se3":[6.984,2.676],"Pr2Te3":[10.55,2.677],"F3Pr1":[14.132,2.586],"Cl3Pr1":[17.629,2.542],"Br3Pr1":[21.07,2.343],"I3Pr1":[24.383,2.297]},"Ra":{"O1Ra1":[0,2.039],"Ra1S1":[2.927,2.1],"Ra1Se1":[5.973,1.991],"Ra1Te1":[8.916,1.976],"F2Ra1":[11.839,1.947],"Cl2Ra1":[14.72,1.915],"Br2Ra1":[17.566,1.922],"I2Ra1":[20.428,1.844]},"Eu":{"Eu1O1":[0,2.663],"Eu2O3":[3.521,2.518],"Eu1S1":[6.979,2.714],"Eu2S3":[10.614,2.796],"Eu1Se1":[14.313,2.581],"Eu2Se3":[17.787,2.609],"Eu1Te1":[21.305,2.618],"Eu2Te3":[24.803,2.671],"Eu1F2":[28.373,2.576],"Eu1F3":[31.83,2.611],"Cl2Eu1":[35.339,2.55],"Cl3Eu1":[38.777,2.61],"Br2Eu1":[42.272,2.56],"Br3Eu1":[45.758,2.614],"Eu1I2":[49.293,2.521],"Eu1I3":[52.7,2.554]},"Ho":{"Ho2O3":[0,2.174],"Ho2S3":[3.073,2.153],"Ho2Se3":[6.143,2.112],"Ho2Te3":[9.183,2.054],"F3Ho1":[12.169,2.09],"Cl3Ho1":[15.192,2.02],"Br3Ho1":[18.137,2.036],"Ho1I3":[21.124,1.967]},"Gd":{"Gd2O3":[0,2.406],"Gd2S3":[3.27,2.459],"Gd2Se3":[6.641,2.345],"Gd2Te3":[9.908,2.325],"F3Gd1":[13.156,2.328],"Cl3Gd1":[16.397,2.28],"Br3Gd1":[19.593,2.245],"Gd1I3":[22.773,2.191]},"Tb":{"O3Tb2":[0,2.131],"S3Tb2":[3.035,2.153],"Se3Tb2":[6.139,2.046],"Tb2Te3":[9.143,2.058],"F3Tb1":[12.143,1.993],"Cl3Tb1":[15.066,2.009],"Br3Tb1":[17.996,1.991],"I3Tb1":[20.953,1.928]},"Nd":{"Nd2O3":[0,2.384],"Nd2S3":[3.249,2.418],"Nd2Se3":[6.614,2.298],"Nd2Te3":[9.841,2.251],"F3Nd1":[13.038,2.258],"Cl3Nd1":[16.247,2.226],"Br3Nd1":[19.409,2.214],"I3Nd1":[22.584,2.144]},"Dy":{"Dy2O3":[0,2.503],"Dy2S3":[3.389,2.492],"Dy2Se3":[6.827,2.338],"Dy2Te3":[10.142,2.36],"Dy1F3":[13.435,2.368],"Cl3Dy1":[16.729,2.303],"Br3Dy1":[19.977,2.305],"Dy1I3":[23.231,2.219]},"Pm":{"O3Pm2":[0,2.277],"Pm2S3":[3.17,2.312],"Pm2Se3":[6.432,2.218],"Pm2Te3":[9.578,2.179],"F3Pm1":[12.678,2.174],"Cl3Pm1":[15.783,2.112],"Br3Pm1":[18.828,2.142],"I3Pm1":[21.894,2.054]},"Er":{"Er2O3":[0,2.121],"Er2S3":[3.02,2.165],"Er2Se3":[6.116,1.997],"Er2Te3":[9.065,2.022],"Er1F3":[12.039,2.048],"Cl3Er1":[15.039,1.935],"Br3Er1":[17.923,1.964],"Er1I3":[20.837,1.909]},"Pa":{"O5Pa2":[0,2.445],"Pa2S5":[3.298,2.486],"F5Pa1":[6.707,2.343],"Cl5Pa1":[9.986,2.304],"Br5Pa1":[13.233,2.297]},"Np":{"Np1O2":[0,2.194],"Np1S2":[3.1,2.257],"Np1Se2":[6.288,2.173],"Np1Te2":[9.405,2.154],"F4Np1":[12.498,2.138],"Cl4Np1":[15.586,2.072],"Br4Np1":[18.605,2.039],"I4Np1":[21.632,2.027]},"U":{"O2U1":[0,2.757],"O3U1":[3.627,2.602],"S2U1":[7.181,2.819],"Se2U1":[10.92,2.653],"Te2U1":[14.533,2.692],"F4U1":[18.147,2.714],"F6U1":[21.788,2.739],"Cl4U1":[25.459,2.619],"Br4U1":[29.003,2.65],"I4U1":[32.575,2.546]},"Tm":{"O3Tm2":[0,2.121],"S3Tm2":[3.006,2.141],"Se3Tm2":[6.075,2.008],"Te3Tm2":[9.009,1.993],"F3Tm1":[11.943,2.002],"Cl3Tm1":[14.871,1.996],"Br3Tm1":[17.789,1.908],"I3Tm1":[20.645,1.835]},"Pu":{"O2Pu1":[0,2.305],"Pu1S2":[3.177,2.323],"Pu1Se2":[6.429,2.236],"Pu1Te2":[9.589,2.216],"F4Pu1":[12.726,2.168],"Cl4Pu1":[15.804,2.122],"Br4Pu1":[18.852,2.118],"I4Pu1":[21.916,2.026]},"Ac":{"Ac2O3":[0,2.198],"Ac2S3":[3.086,2.262],"Ac2Se3":[6.284,2.153],"Ac2Te3":[9.363,2.117],"Ac1F3":[12.393,2.145],"Ac1Cl3":[15.471,2.07],"Ac1Br3":[18.455,2.048],"Ac1I3":[21.422,1.997]},"Yb":{"O3Yb2":[0,2.245],"S3Yb2":[3.135,2.248],"Se3Yb2":[6.315,2.177],"Te3Yb2":[9.422,2.179],"F3Yb1":[12.542,2.195],"Cl3Yb1":[15.656,2.085],"Br3Yb1":[18.663,2.083],"I3Yb1":[21.684,2.049]},"Th":{"O2Th1":[0,2.126],"S2Th1":[3.005,2.161],"Se2Th1":[6.089,1.993],"Te2Th1":[9.009,2.042],"F4Th1":[11.969,2.024],"Cl4Th1":[14.899,1.932],"Br4Th1":[17.737,1.939],"I4Th1":[20.576,1.857]},"Cf":{"Cf2O3":[0,2.342],"Cf2S3":[3.244,2.459],"Cf2Se3":[6.631,2.27],"Cf2Te3":[9.849,2.264],"Cf1F3":[13.04,2.264],"Cf1Cl3":[16.23,2.233],"Br3Cf1":[19.391,2.219],"Cf1I3":[22.537,2.155]},"Es":{"Es2O3":[0,2.45],"Es2S3":[3.311,2.536],"Es2Se3":[6.786,2.443],"Es2Te3":[10.151,2.379],"Es1F3":[13.459,2.412],"Cl3Es1":[16.798,2.312],"Br3Es1":[20.038,2.297],"Es1I3":[23.299,2.239]},"Sr":{"O1Sr1":[0,2.437],"S1Sr1":[3.339,2.499],"Se1Sr1":[6.774,2.348],"Sr1Te1":[10.088,2.327],"F2Sr1":[13.379,2.338],"Cl2Sr1":[16.678,2.32],"Br2Sr1":[19.95,2.268],"I2Sr1":[23.183,2.175],"N2Sr3":[26.306,2.313],"P2Sr3":[29.593,2.292],"H2Sr1":[32.835,2.415]},"Bk":{"Bk2O3":[0,2.247],"Bk2S3":[3.126,2.31],"Bk2Se3":[6.367,2.155],"Bk2Te3":[9.449,2.167],"Bk1F3":[12.554,2.187],"Bk1Cl3":[15.669,2.065],"Bk1Br3":[18.666,2.08],"Bk1I3":[21.693,2.029]},"Cm":{"Cm2O3":[0,2.071],"Cm2S3":[2.941,2.11],"Cm2Se3":[5.983,1.987],"Cm2Te3":[8.888,1.972],"Cm1F3":[11.785,1.929],"Cl3Cm1":[14.638,1.943],"Br3Cm1":[17.5,1.902],"Cm1I3":[20.338,1.844]},"Hf":{"Hf1O2":[0,2.2],"Hf1S2":[3.049,2.22],"Hf1Se2":[6.17,2.117],"Hf1Te2":[9.196,2.054],"F4Hf1":[12.176,2.073],"Cl4Hf1":[15.161,2.037],"Br4Hf1":[18.121,2.038],"Hf1I4":[21.068,1.953]},"Zr":{"O2Zr1":[0,2.304],"S2Zr1":[3.184,2.389],"Se2Zr1":[6.525,2.222],"Te2Zr1":[9.683,2.191],"F4Zr1":[12.81,2.165],"Cl4Zr1":[15.915,2.112],"Br4Zr1":[18.957,2.11],"I4Zr1":[22.04,2.076]},"Lu":{"Lu2O3":[0,2.274],"Lu2S3":[3.143,2.28],"Lu2Se3":[6.353,2.193],"Lu2Te3":[9.458,2.159],"F3Lu1":[12.529,2.08],"Cl3Lu1":[15.526,2.097],"Br3Lu1":[18.536,2.102],"I3Lu1":[21.563,2.022]},"Nb":{"Nb2O5":[0,2.207],"Nb2S5":[3.073,2.164],"F5Nb1":[6.182,2.047],"Cl5Nb1":[9.153,2.016],"Br5Nb1":[12.114,2.011]},"Mo":{"Mo1O2":[0,2.817],"Mo1O3":[3.691,2.673],"Mo1S2":[7.311,2.813],"Mo1Se2":[11.076,2.778],"Mo1Te2":[14.773,2.755],"F4Mo1":[18.43,2.748],"F6Mo1":[22.074,2.891],"Cl4Mo1":[25.864,2.706],"Br4Mo1":[29.462,2.694],"I4Mo1":[33.104,2.651]},"Tc":{"O7Tc2":[0,2.229]},"La":{"La2O3":[0,2.181],"La2S3":[3.052,2.233],"La2Se3":[6.223,2.12],"La2Te3":[9.261,2.127],"F3La1":[12.315,2.068],"Cl3La1":[15.313,2.031],"Br3La1":[18.279,2.057],"I3La1":[21.266,1.917]},"V":{"O3V2":[0,2.796],"O5V2":[3.665,2.613],"S3V2":[7.194,2.858],"Se3V2":[10.956,2.686],"Te3V2":[14.561,2.704],"F3V1":[18.154,2.655],"Cl3V1":[21.714,2.619],"Br3V1":[25.225,2.639],"I3V1":[28.779,2.556]},"Os":{"O2Os1":[0,2.702],"O4Os1":[3.592,2.496],"F4Os1":[6.999,2.588]},"Ru":{"O3Ru2":[0,2.77],"O2Ru1":[3.65,2.485],"Ru2S3":[7.084,2.784],"Ru2Se3":[10.772,2.695],"Ru2Te3":[14.401,2.68],"F3Ru1":[17.982,2.655],"F4Ru1":[21.575,2.584],"Cl3Ru1":[25.092,2.633],"Br3Ru1":[28.645,2.631],"I3Ru1":[32.224,2.567]},"Ta":{"O5Ta2":[0,2.116],"S5Ta2":[3.058,2.193],"F5Ta1":[6.235,2.052],"Cl5Ta1":[9.282,2.031],"Br5Ta1":[12.302,1.976]},"Re":{"O7Re2":[0,2.047],"F7Re1":[2.904,1.941]},"Rh":{"O3Rh2":[0,2.063],"Rh2S3":[2.921,2.079],"Rh2Se3":[5.933,1.981],"Rh2Te3":[8.841,1.971],"F3Rh1":[11.75,1.927],"Cl3Rh1":[14.602,1.884],"Br3Rh1":[17.395,1.905],"I3Rh1":[20.236,1.859]},"Co":{"Co1O1":[0,2.179],"Co1S1":[3.125,2.271],"Co1Se1":[6.406,2.068],"Co1Te1":[9.476,2.121],"Co1F2":[12.567,2.053],"Cl2Co1":[15.58,2.025],"Br2Co1":[18.568,2.054],"Co1I2":[21.597,2.002]},"Ir":{"Ir2O3":[0,2.847],"Ir1O2":[3.698,2.589],"Ir2S3":[7.191,2.875],"Ir2Se3":[10.959,2.691],"Ir2Te3":[14.565,2.732],"F3Ir1":[18.184,2.704],"F4Ir1":[21.779,2.656],"Cl3Ir1":[25.341,2.653],"Br3Ir1":[28.889,2.648],"I3Ir1":[32.443,2.617]},"Ti":{"O2Ti1":[0,2.216],"S2Ti1":[3.102,2.288],"Se2Ti1":[6.349,2.178],"Te2Ti1":[9.47,2.163],"F4Ti1":[12.587,2.081],"Cl4Ti1":[15.605,2.064],"Br4Ti1":[18.62,2.02],"I4Ti1":[21.628,1.997],"N4Ti3":[24.549,2.088]},"Ni":{"Ni1O1":[0,2.029],"Ni1S1":[2.893,2.07],"Ni1Se1":[5.93,1.897],"Ni1Te1":[8.771,1.996],"F2Ni1":[11.702,1.87],"Cl2Ni1":[14.504,1.872],"Br2Ni1":[17.316,1.839],"I2Ni1":[20.104,1.749]},"Ag":{"Ag2O1":[0,1.939],"Ag2S1":[2.828,2.01],"Ag2Se1":[5.759,1.883],"Ag2Te1":[8.576,1.922],"Ag1F1":[11.429,1.876],"Ag1Br1":[14.236,1.859],"Ag1I1":[17.01,1.77]},"Au":{"Au2O1":[0,2.5],"Au2O3":[3.353,2.279],"Au2S1":[6.569,2.529],"Au2S3":[10.018,2.526],"Au2Se1":[13.459,2.377],"Au2Se3":[16.762,2.462],"Au2Te1":[20.155,2.427],"Au2Te3":[23.509,2.487],"Au1F1":[26.923,2.389],"Au1F3":[30.198,2.429],"Au1Cl1":[33.55,2.317],"Au1Cl3":[36.788,2.353],"Au1Br1":[40.06,2.339],"Au1Br3":[43.291,2.392],"Au1I1":[46.602,2.296],"Au1I3":[49.81,2.327]},"Cu":{"Cu2O1":[0,2.523],"Cu2S1":[3.392,2.542],"Cu1S1":[6.859,2.546],"Cu2Se1":[10.339,2.416],"Cu1Se1":[13.685,2.382],"Cu2Te1":[17.012,2.446],"Cu1Te1":[20.433,2.478],"Cu1F1":[23.817,2.399],"Cu1F2":[27.135,2.434],"Cl1Cu1":[30.474,2.368],"Cl2Cu1":[33.75,2.378],"Br1Cu1":[37.03,2.4],"Br2Cu1":[40.332,2.432],"Cu1I1":[43.673,2.317],"Cu1I2":[46.895,2.321]},"Pd":{"O1Pd1":[0,2.202],"Pd1S1":[3.071,2.312],"Pd1Se1":[6.301,2.158],"Pd1Te1":[9.379,2.208],"F2Pd1":[12.509,2.231],"Cl2Pd1":[15.667,2.07],"Br2Pd1":[18.659,2.09],"I2Pd1":[21.682,1.985]},"Cr":{"Cr2O3":[0,2.518],"Cr1O3":[3.379,2.312],"Cr2S3":[6.598,2.512],"Cr2Se3":[10.024,2.57],"Cr2Te3":[13.524,2.522],"Cr1F3":[16.97,2.381],"Cl3Cr1":[20.272,2.366],"Br3Cr1":[23.542,2.359],"Cr1I3":[26.817,2.308]},"W":{"O2W1":[0,2.842],"O3W1":[3.741,2.673],"S2W1":[7.352,2.844],"Se2W1":[11.142,2.731],"Te2W1":[14.829,2.728],"F4W1":[18.524,2.775],"F6W1":[22.204,2.814],"Cl4W1":[25.92,2.652],"Cl6W1":[29.513,2.686],"Br4W1":[33.125,2.637],"I4W1":[36.71,2.554]},"B":{"B2O3":[0,2.537],"B2S3":[3.454,2.514],"B1F3":[6.935,2.396],"B1Cl3":[10.282,2.404],"B1Br3":[13.651,2.348],"B1I3":[16.963,2.373],"B1N1":[20.305,1.907]},"Cd":{"Cd1O1":[0,2.178],"Cd1S1":[3.054,2.237],"Cd1Se1":[6.233,2.117],"Cd1Te1":[9.288,2.119],"Cd1F2":[12.356,2.131],"Cd1Cl2":[15.415,2.018],"Br2Cd1":[18.371,2.034],"Cd1I2":[21.34,1.966]},"In":{"In2O3":[0,2.116],"In2S3":[2.98,2.136],"In2Se3":[6.032,2.08],"In2Te3":[9.011,2.051],"F3In1":[11.975,2.065],"Cl3In1":[14.97,1.966],"Br3In1":[17.859,1.963],"I3In1":[20.783,1.893],"In1P1":[23.614,2.038]},"Tl":{"O1Tl2":[0,2.706],"O3Tl2":[3.574,2.41],"S1Tl2":[6.908,2.717],"S3Tl2":[10.546,2.706],"Se1Tl2":[14.172,2.679],"Se3Tl2":[17.789,2.628],"Te1Tl2":[21.343,2.526],"Te3Tl2":[24.803,2.531],"F1Tl1":[28.263,2.565],"F3Tl1":[31.738,2.532],"Cl1Tl1":[35.216,2.499],"Cl3Tl1":[38.646,2.507],"Br1Tl1":[42.086,2.464],"Br3Tl1":[45.439,2.464],"I1Tl1":[48.824,2.433],"I3Tl1":[52.192,2.422]},"Al":{"Al2S3":[0,2.458],"Al2Se3":[3.35,2.215],"Al2Te3":[6.445,2.18],"Al1F3":[9.536,2.121],"Al1Cl3":[12.572,2.099],"Al1Br3":[15.568,2.091],"Al1I3":[18.579,1.999],"Al1N1":[21.461,2.101],"Al1P1":[24.494,2.158]},"Ge":{"Ge1O2":[0,2.812],"Ge1S2":[3.706,2.711],"F4Ge1":[7.365,2.629],"Cl4Ge1":[10.919,2.663],"Br4Ge1":[14.527,2.647],"Ge1I4":[18.13,2.56]},"Am":{"Am2O3":[0,2.243],"Am2S3":[3.108,2.283],"Am2Se3":[6.314,2.146],"Am2Te3":[9.38,2.194],"Am1F3":[12.476,2.14],"Am1Cl3":[15.524,2.064],"Am1Br3":[18.489,2.087],"Am1I3":[21.524,2.036]},"Hg":{"Hg1O1":[0,1.998],"Hg1S1":[2.836,2.02],"Hg1Se1":[5.759,1.846],"Hg1Te1":[8.539,1.881],"F2Hg1":[11.319,1.869],"Cl2Hg1":[14.088,1.872],"Br2Hg1":[16.852,1.818],"Hg1I2":[19.594,1.726]},"Pb":{"O1Pb1":[0,2.562],"O2Pb1":[3.427,2.343],"Pb1S1":[6.696,2.616],"Pb1S2":[10.232,2.569],"Pb1Se1":[13.745,2.561],"Pb1Se2":[17.283,2.515],"Pb1Te1":[20.783,2.574],"Pb1Te2":[24.336,2.534],"F2Pb1":[27.831,2.479],"F4Pb1":[31.236,2.404],"Cl2Pb1":[34.568,2.404],"Cl4Pb1":[37.897,2.384],"Br2Pb1":[41.236,2.42],"Br4Pb1":[44.608,2.373],"I2Pb1":[47.913,2.347],"I4Pb1":[51.184,2.35]},"Pt":{"O1Pt1":[0,2.732],"O2Pt1":[3.586,2.477],"Pt1S1":[6.996,2.725],"Pt1S2":[10.651,2.729],"Pt1Se1":[14.311,2.613],"Pt1Se2":[17.851,2.575],"Pt1Te1":[21.366,2.578],"Pt1Te2":[24.868,2.599],"F2Pt1":[28.393,2.602],"F4Pt1":[31.894,2.575],"Cl2Pt1":[35.415,2.514],"Cl4Pt1":[38.842,2.499],"Br2Pt1":[42.276,2.573],"Br4Pt1":[45.751,2.507],"I2Pt1":[49.195,2.437],"I4Pt1":[52.527,2.396]},"Ga":{"Ga2O3":[0,2.08],"Ga2S3":[2.944,2.126],"Ga2Se3":[6.012,2.033],"Ga2Te3":[8.984,1.994],"F3Ga1":[11.931,1.988],"Cl3Ga1":[14.857,1.951],"Br3Ga1":[17.75,1.926],"Ga1I3":[20.632,1.872],"Ga1N1":[23.438,1.939],"Ga1P1":[26.346,1.99]},"Bi":{"Bi2O3":[0,2.267],"Bi2S3":[3.128,2.255],"Bi2Se3":[6.298,2.176],"Bi2Te3":[9.43,2.157],"Bi1F3":[12.509,2.138],"Bi1Cl3":[15.57,2.054],"Bi1Br3":[18.552,2.124],"Bi1I3":[21.614,1.99]},"N":{"N1O1":[0,2.787],"N2O5":[3.665,2.729]},"S":{"O3S1":[0,2.475],"F4S1":[3.348,2.446],"F6S1":[6.738,2.552]},"Te":{"O2Te1":[0,2.71],"F4Te1":[3.575,2.517]},"Zn":{"S1Zn1":[0,2.226],"Se1Zn1":[3.088,1.893],"Te1Zn1":[5.928,1.922],"F2Zn1":[8.773,1.86],"Cl2Zn1":[11.56,1.786],"Br2Zn1":[14.263,1.797],"I2Zn1":[17.006,1.736],"P2Zn3":[19.68,1.785]},"Br":{"Br2O1":[0,1.976]},"Sn":{"O1Sn1":[0,2.691],"O2Sn1":[3.551,2.418],"S1Sn1":[6.9,2.719],"S2Sn1":[10.536,2.698],"Se1Sn1":[14.168,2.463],"Se2Sn1":[17.565,2.533],"Sn1Te1":[21.049,2.533],"Sn1Te2":[24.528,2.563],"F2Sn1":[28.011,2.56],"F4Sn1":[31.502,2.58],"Cl2Sn1":[34.99,2.486],"Cl4Sn1":[38.386,2.503],"Br2Sn1":[41.821,2.55],"Br4Sn1":[45.306,2.512],"I2Sn1":[48.739,2.45],"I4Sn1":[52.136,2.363]},"I":{"I2O5":[0,2.443],"F5I1":[3.297,2.278]},"Kr":{"F2Kr1":[0,2.661]},"Se":{"O2Se1":[0,2.623],"F4Se1":[3.496,2.548]},"Xe":{"F2Xe1":[0,2.702],"F4Xe1":[3.562,2.582],"F6Xe1":[7.08,2.63]},"Sb":{"O3Sb2":[0,2.663],"O5Sb2":[3.514,2.537],"S3Sb2":[6.984,2.758],"S5Sb2":[10.669,2.817],"F3Sb1":[14.43,2.591],"F5Sb1":[17.952,2.643],"Cl3Sb1":[21.541,2.591],"Cl5Sb1":[25.052,2.656],"Br3Sb1":[28.639,2.561],"Br5Sb1":[32.127,2.575],"I3Sb1":[35.651,2.508]},"Cl":{"Cl2O1":[0,2.024],"Cl1O2":[2.939,2.173],"Cl2O7":[6.078,2.272]},"P":{"O3P2":[0,2.437],"O5P2":[3.335,2.359],"P2S3":[6.657,2.457],"P2S5":[10.055,2.533],"F3P1":[13.538,2.326],"F5P1":[16.804,2.42],"Cl3P1":[20.176,2.322],"Cl5P1":[23.45,2.368],"Br3P1":[26.779,2.28],"Br5P1":[30.004,2.287],"I3P1":[33.256,2.259]},"Si":{"S2Si1":[0,2.78],"F4Si1":[3.665,2.509],"Cl4Si1":[7.115,2.472],"Br4Si1":[10.515,2.466],"I4Si1":[13.929,2.392],"N4Si3":[17.25,2.006]},"As":{"As2O3":[0,2.562],"As2O5":[3.412,2.425],"As2S3":[6.744,2.57],"As2S5":[10.218,2.586],"As1F3":[13.72,2.413],"As1F5":[17.033,2.418],"As1Cl3":[20.405,2.429],"As1Cl5":[23.725,2.481],"As1Br3":[27.147,2.408],"As1Br5":[30.435,2.439],"As1I3":[33.775,2.379]}}}/*END*/;
+
+// مركّبات إضافية مختارة
+LAB.push(
+  {c:{F:2}, n:"غاز الفلور", f:"F₂", t:"أنشط عنصر في الدنيا كلها، بيتفاعل مع أي حاجة تقريبًا."},
+  {c:{Br:2}, n:"البروم", f:"Br₂", t:"سايل لونه بني محمرّ، وهو اللافلز الوحيد اللي بيفضل سايل في درجة حرارة الأوضة."},
+  {c:{I:2}, n:"اليود", f:"I₂", t:"بلورات بنفسجي غامق، ولو سخّنتها بتتحوّل لبخار بنفسجي على طول."},
+  {c:{P:4}, n:"الفوسفور الأبيض", f:"P₄", t:"أربع ذرات فوسفور عاملين شكل هرم، وبيولّع لوحده في الهوا!"},
+  {c:{S:8}, n:"الكبريت", f:"S₈", t:"تمن ذرات كبريت ماسكين في بعض في شكل دايرة، وده الكبريت الأصفر اللي تعرفه."},
+  {c:{H:2,S:1}, n:"كبريتيد الهيدروجين", f:"H₂S", t:"ده الغاز اللي ريحته زي البيض المعفّن."},
+  {c:{H:1,Br:1}, n:"بروميد الهيدروجين", f:"HBr", t:"غاز لما يدوب في المية بيبقى حمض قوي."},
+  {c:{H:1,I:1}, n:"يوديد الهيدروجين", f:"HI", t:"من أقوى الأحماض لما يدوب في المية."},
+  {c:{P:1,H:3}, n:"الفوسفين", f:"PH₃", t:"غاز سام ريحته شبه التوم."},
+  {c:{C:1,Cl:4}, n:"رابع كلوريد الكربون", f:"CCl₄", t:"سايل تقيل كانوا بيستخدموه زمان في طفايات الحريق."},
+  {c:{C:1,S:2}, n:"ثاني كبريتيد الكربون", f:"CS₂", t:"سايل بيتبخّر بسرعة وسهل يولّع."},
+  {c:{C:2,H:6}, n:"الإيثان", f:"C₂H₆", t:"غاز موجود مع الغاز الطبيعي، وبيعملوا منه البلاستيك."},
+  {c:{C:2,H:4}, n:"الإيثيلين", f:"C₂H₄", t:"الغاز ده بيخلّي الموز والفاكهة تستوي أسرع!"},
+  {c:{C:2,H:2}, n:"الأستيلين", f:"C₂H₂", t:"بيولّع بلهب سخن جدًا، وبيستخدموه في لحام الحديد."},
+  {c:{C:6,H:6}, n:"البنزين العطري", f:"C₆H₆", t:"ست ذرات كربون عاملين حلقة، وهو مادة أساسية في صناعات كتير."},
+  {c:{Si:1,O:2}, n:"الرمل", f:"SiO₂", t:"ده الرمل والكوارتز، ومنه بيعملوا الإزاز!"},
+  {c:{Fe:3,O:4}, n:"حجر المغناطيس", f:"Fe₃O₄", t:"حجر طبيعي اسمه الماجنتيت، وبيشد الحديد زي المغناطيس."},
+  {c:{N:2,O:1}, n:"غاز الضحك", f:"N₂O", t:"بيستخدمه دكاترة الأسنان عشان يريّح المريض.",
+   a:[["N",-1.15,0,0],["N",0,0,0],["O",1.2,0,0]], b:[[0,1,2],[1,2,2]]},
+  {c:{Si:1,C:1}, n:"كربيد السيليكون", f:"SiC", t:"صلب جدًا قريب من الألماظ، وبيعملوا منه ورق الصنفرة.", lattice:["Si","C"]},
+  {c:{C:1,H:4,O:1}, n:"الميثانول", f:"CH₃OH", t:"كحول سام جدًا ممكن يعمي لو حد شربه، وبيستخدموه وقود.",
+   a:[["C",0,0,0],["O",1.4,0,0],["H",1.75,.9,0],["H",-.4,1,0],["H",-.4,-.5,.87],["H",-.4,-.5,-.87]], b:[[0,1,1],[1,2,1],[0,3,1],[0,4,1],[0,5,1]]},
+  {c:{H:1,N:1,O:3}, n:"حمض النيتريك", f:"HNO₃", t:"حمض قوي بيعملوا منه الأسمدة.",
+   a:[["N",0,0,0],["O",1.2,0,0],["O",-.6,1.05,0],["O",-.6,-1.05,0],["H",-1.5,-1.1,0]], b:[[0,1,2],[0,2,1],[0,3,1],[3,4,1]]},
+  {c:{N:1,H:4,Cl:1}, n:"ملح النشادر", f:"NH₄Cl", t:"ملح أبيض بيستخدموه في اللحام وكان في البطاريات القديمة.",
+   a:[["N",0,0,0],["H",T,T,T],["H",T,-T,-T],["H",-T,T,-T],["H",-T,-T,T],["Cl",2.3,0,0]], b:[[0,1,1],[0,2,1],[0,3,1],[0,4,1],[1,5,0]]}
+);
+
+/* ===== توليد المركّبات الثنائية من أرقام التأكسد ===== */
+const VAL = {H:1,F:1,Cl:1,Br:1,I:1,O:2,S:2,Se:2,Te:2,N:3,P:3,As:3,B:3,C:4,Si:4,Ge:4};
+const NM_CATIONS = new Set("B Si Ge N P As Sb S Se Te Cl Br I Xe Kr".split(" "));
+const STATES = {};
+("Li:1 Na:1 K:1 Rb:1 Cs:1 Fr:1 Be:2 Mg:2 Ca:2 Sr:2 Ba:2 Ra:2 Sc:3 Y:3 La:3 Ce:3|4 Pr:3 Nd:3 Pm:3 Sm:3 Eu:2,3 Gd:3 Tb:3 Dy:3 Ho:3 Er:3 Tm:3 Yb:3 Lu:3 " +
+ "Ac:3 Th:4 Pa:5 U:4|6 Np:4 Pu:4 Am:3 Cm:3 Bk:3 Cf:3 Es:3 Ti:4 Zr:4 Hf:4 V:3|5 Nb:5 Ta:5 Cr:3|6 Mo:4|6 W:4,6 Mn:2|4,7 Tc:|7 Re:|7 " +
+ "Fe:2,3 Ru:3|4 Os:|4,8 Co:2 Rh:3 Ir:3|4 Ni:2 Pd:2 Pt:2,4 Cu:1,2 Ag:1 Au:1,3 Zn:2 Cd:2 Hg:2 B:3 Al:3 Ga:3 In:3 Tl:1,3 Si:4 Ge:4 " +
+ "Sn:2,4 Pb:2,4 P:3,5 As:3,5 Sb:3,5 Bi:3 N:|1,2,4,5 S:|4,6 Se:|4 Te:|4 Cl:|1,4,7 Br:|1 I:|5 Xe:|2,4,6 Kr:|2")
+  .split(" ").forEach(t => { const [s, v] = t.split(":"), [lo, hi] = v.split("|");
+    STATES[s] = { low: lo ? lo.split(",").map(Number) : [], high: hi ? hi.split(",").map(Number) : [] }; });
+const ANIONS = [["O",2,"أكسيد"],["S",2,"كبريتيد"],["Se",2,"سيلينيد"],["Te",2,"تيلوريد"],["F",1,"فلوريد"],["Cl",1,"كلوريد"],
+                ["Br",1,"بروميد"],["I",1,"يوديد"],["N",3,"نيتريد"],["P",3,"فوسفيد"],["H",1,"هيدريد"]];
+const ANION_V = Object.fromEntries(ANIONS.map(a => [a[0], a[1]]));
+const NITRIDE = new Set("Li Be Mg Ca Sr Ba Al Ga B Ti Si".split(" "));
+const PHOSPHIDE = new Set("Li Na K Mg Ca Sr Ba Al Ga In Zn".split(" "));
+const HYDRIDE = new Set("Li Na K Rb Cs Be Mg Ca Sr Ba".split(" "));
+const F_HIGH = new Set("S Se Te U W Mo Re Xe Kr I".split(" "));
+const ORD = ["", "الأحادي", "الثنائي", "الثلاثي", "الرباعي", "الخماسي", "السداسي", "السباعي", "الثماني"];
+const PRE = ["", "أول", "ثاني", "ثالث", "رابع", "خامس", "سادس", "سابع", "ثامن"];
+const SUBS = "₀₁₂₃₄₅₆₇₈₉";
+const sub = n => n === 1 ? "" : String(n).split("").map(d => SUBS[d]).join("");
+const gcd = (a, b) => b ? gcd(b, a % b) : a;
+const bySym = Object.fromEntries(ELEMENTS.map(e => [e.s, e]));
+const elName = s => bySym[s].n;
+
+function genFact(m) {
+  const X = elName(m.cat), A = elName(m.an), z = bySym[m.cat].z;
+  let t;
+  if (m.cat === "Xe" || m.cat === "Kr") t = `الغازات النبيلة هادية جدًا، بس الفلور النشيط قدر يخلّي ال${X} يتفاعل!`;
+  else if (m.an === "O") t = `بيتكوّن لما ال${X} يتّحد مع الأكسجين.`;
+  else if (m.an === "H") t = `ال${X} هنا خلّى الهيدروجين شايل شحنة سالبة، والمركّب ده بيتفاعل مع المية بسرعة.`;
+  else if (["F","Cl","Br","I"].includes(m.an)) t = NM_CATIONS.has(m.cat) ? `مركّب بيتكوّن من ال${X} وال${A}.` : `ملح بيتكوّن من ال${X} وال${A}.`;
+  else if (["N","P"].includes(m.an)) t = `مركّب صلب بيتكوّن من ال${X} وال${A}.`;
+  else t = `مركّب من ال${X} وال${A}، وفيه مركّبات زيّه كتير موجودة في الصخور.`;
+  if (z >= 84 || z === 43 || z === 61) t += ` وخلّي بالك، ال${X} مُشِع.`;
+  return t;
+}
+
+function genCompounds() {
+  const out = [];
+  for (const s in STATES) {
+    const st = STATES[s], all = [...st.low, ...st.high], multi = new Set(all).size > 1;
+    for (const [an, v, aname] of ANIONS) {
+      if (an === s) continue;
+      if (an === "N" && !NITRIDE.has(s)) continue;
+      if (an === "P" && !PHOSPHIDE.has(s)) continue;
+      if (an === "H" && !HYDRIDE.has(s)) continue;
+      if (["N","Cl","Br","I"].includes(s) && an !== "O" && !(s === "I" && an === "F")) continue;
+      if ((s === "Xe" || s === "Kr") && an !== "F") continue;
+      if (NM_CATIONS.has(s) && ["Se","Te","H"].includes(an)) continue;
+      if (NM_CATIONS.has(s) && an === "N" && s !== "Si" && s !== "B") continue;
+      if (NM_CATIONS.has(s) && an === "P") continue;
+      let states = [...st.low];
+      if (an === "O") states = all;
+      else if (an === "F") states = [...st.low, ...st.high.filter(x => x <= 4 || F_HIGH.has(s))];
+      if (an === "I" || an === "Se" || an === "Te") states = states.filter(x => x <= 4);
+      if (an === "S") states = states.filter(x => x <= 5);
+      if (an === "Br") states = states.filter(x => x <= 5);
+      for (const x of new Set(states)) {
+        const g = gcd(x, v), a = v / g, b = x / g, c = {}; c[s] = a; c[an] = b;
+        let n;
+        if (NM_CATIONS.has(s)) {
+          const pre = ["O","S","F","Cl","Br","I"].includes(an) && !(b === 1 && a > 1) ? PRE[b] + " " : "";
+          n = `${pre}${aname} ال${elName(s)}`;
+        } else n = `${aname} ال${elName(s)}${multi ? " " + ORD[x] : ""}`;
+        const m = { c, n, f: s + sub(a) + an + sub(b), gen: true, cat: s, an, x };
+        m.t = genFact(m);
+        out.push(m);
+      }
+    }
+  }
+  return out;
+}
+
+const labKey = c => Object.keys(c).filter(k => c[k] > 0).sort().map(k => k + c[k]).join("");
+const COMPOUNDS = (() => {
+  const map = new Map();
+  genCompounds().forEach(m => { m.key = labKey(m.c); map.set(m.key, m); });
+  LAB.forEach(m => {
+    m.key = labKey(m.c);
+    const g = map.get(m.key);
+    if (g && g.n !== m.n) m.n2 = g.n;
+    map.set(m.key, m);
+  });
+  return [...map.values()];
+})();
+const LAB_BY_KEY = Object.fromEntries(COMPOUNDS.map(m => [m.key, m]));
+
+function atomCount(n, sym) {
+  const name = elName(sym);
+  if (n === 1) return `ذرة ${name} واحدة`;
+  if (n === 2) return `ذرتين ${name}`;
+  if (n <= 10) return `${CONSTRUCT[n]} ذرات ${name}`;
+  return `${egyNumber(n)} ذرة ${name}`;
+}
+function atomsPhrase(c, joiner) {
+  const parts = Object.keys(c).map(k => atomCount(c[k], k));
+  if (joiner) return parts.join(joiner);
+  return parts.length > 1 ? parts.slice(0, -1).join("، ") + " و" + parts[parts.length - 1] : parts[0];
+}
+function labSentences(m) {
+  if (m.gen) return ["تفاعل ناجح!", `عملنا ${m.n}.`];
+  return ["تفاعل ناجح!", `${atomsPhrase(m.c)} اتّحدوا مع بعض وعملوا ${m.n}.`, m.t];
+}
+
+// ألوان وأحجام كل العناصر
+const colorOf = s => (LAB_ELEMENTS[s] || {}).c || CATS[bySym[s].c].color;
+function radiusOf(s) {
+  if (LAB_ELEMENTS[s]) return LAB_ELEMENTS[s].r;
+  const z = bySym[s].z;
+  return z <= 2 ? .55 : z <= 10 ? .8 : z <= 18 ? 1 : z <= 36 ? 1.05 : z <= 54 ? 1.1 : 1.15;
+}
+
+// شكل المركّب لو مالوش شكل مرسوم: روابط حسب التكافؤ وبعدين ترتيب ثلاثي الأبعاد بالقوى
+function buildAuto(m) {
+  const keys = Object.keys(m.c), atoms = [], bm = new Map();
+  const addB = (i, j, o) => { const k = Math.min(i, j) + "-" + Math.max(i, j); bm.set(k, (bm.get(k) || 0) + o); };
+  if (keys.length === 1) {
+    const s = keys[0], n = m.c[s];
+    for (let i = 0; i < n; i++) atoms.push(s);
+    if (n === 2) addB(0, 1, Math.min(3, VAL[s] || 1));
+    else if (n === 3) { addB(0, 1, 2); addB(1, 2, 1); }
+    else if (n === 4) { for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) addB(i, j, 1); }
+    else for (let i = 0; i < n; i++) addB(i, (i + 1) % n, 1);
+  } else {
+    let [A, B] = keys.slice().sort((x, y) => m.c[x] - m.c[y] || (VAL[y] || 0) - (VAL[x] || 0));
+    if (m.gen) { A = m.cat; B = m.an; }
+    const a = m.c[A], b = m.c[B], ionic = m.gen && !NM_CATIONS.has(A);
+    for (let i = 0; i < a; i++) atoms.push(A);
+    for (let j = 0; j < b; j++) atoms.push(B);
+    const vB = m.gen ? ANION_V[B] : (VAL[B] || 1), used = new Array(a).fill(0);
+    for (let j = 0; j < b; j++) { const i = j % a; addB(i, a + j, ionic ? 1 : vB); used[i] += vB; }
+    let aa = false;
+    if (!ionic && !m.gen && a > 1) {
+      const left = used.map(u => Math.max(0, (VAL[A] || 4) - u));
+      if (a === 2) { const o = Math.min(left[0], left[1]); if (o > 0) { addB(0, 1, o); aa = true; } }
+      else for (let pass = 0; pass < 3; pass++) for (let i = 0; i < a; i++) {
+        const j = (i + 1) % a;
+        if (left[i] > 0 && left[j] > 0) { addB(i, j, 1); left[i]--; left[j]--; aa = true; }
+      }
+    }
+    if (a > 1 && !aa) { const br = a + b - 1; for (let i = 0; i < a; i++) if (!bm.has(Math.min(i, br) + "-" + Math.max(i, br))) addB(i, br, 1); }
+    if (ionic) for (const k of bm.keys()) bm.set(k, 0);
+  }
+  const bonds = [...bm.entries()].map(([k, o]) => { const [i, j] = k.split("-").map(Number); return [i, j, Math.min(o, 3)]; });
+  // ترتيب بالقوى
+  const n = atoms.length, R = atoms.map(radiusOf), gold = Math.PI * (3 - Math.sqrt(5));
+  const P = atoms.map((_, i) => { const y = n === 1 ? 0 : 1 - (i / (n - 1)) * 2, r = Math.sqrt(1 - y * y), th = gold * i; return [Math.cos(th) * r * 1.6, y * 1.6, Math.sin(th) * r * 1.6]; });
+  for (let it = 0; it < 700; it++) {
+    const F = P.map(() => [0, 0, 0]), step = .06 * (1 - it / 700) + .005;
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+      const d = [P[j][0] - P[i][0], P[j][1] - P[i][1], P[j][2] - P[i][2]], L = Math.max(.2, Math.hypot(...d)), f = .9 / (L * L);
+      for (let k = 0; k < 3; k++) { F[i][k] -= d[k] / L * f; F[j][k] += d[k] / L * f; }
+    }
+    for (const [i, j, o] of bonds) {
+      const d = [P[j][0] - P[i][0], P[j][1] - P[i][1], P[j][2] - P[i][2]], L = Math.max(.01, Math.hypot(...d));
+      const T0 = .5 * (R[i] + R[j]) + .55 - .08 * Math.max(0, o - 1) + (o === 0 ? .35 : 0), f = 1.2 * (L - T0);
+      for (let k = 0; k < 3; k++) { F[i][k] += d[k] / L * f; F[j][k] -= d[k] / L * f; }
+    }
+    for (let i = 0; i < n; i++) for (let k = 0; k < 3; k++) P[i][k] += Math.max(-.3, Math.min(.3, F[i][k] * step * 4));
+  }
+  return { a: atoms.map((s, i) => [s, ...P[i]]), b: bonds };
+}
+
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  return `rgb(${Math.round(r * k)},${Math.round(g * k)},${Math.round(b * k)})`;
+}
+
+const Mol = {
+  canvas: null, ctx: null, w: 0, h: 0, dpr: 1, raf: 0, last: 0, t: 0,
+  yaw: .5, pitch: -.3, dragging: false, lx: 0, ly: 0, idle: 0,
+  parts: [], bonds: [], mode: "beaker", anim: 1, flash: 0, sprites: {},
+
+  init(canvas) {
+    this.canvas = canvas; this.ctx = canvas.getContext("2d");
+    new ResizeObserver(() => this.resize()).observe(canvas);
+    canvas.addEventListener("pointerdown", e => { this.dragging = true; this.lx = e.clientX; this.ly = e.clientY; canvas.setPointerCapture(e.pointerId); });
+    canvas.addEventListener("pointermove", e => {
+      if (!this.dragging) return;
+      this.yaw += (e.clientX - this.lx) * .01;
+      this.pitch = Math.max(-1.4, Math.min(1.4, this.pitch + (e.clientY - this.ly) * .01));
+      this.lx = e.clientX; this.ly = e.clientY; this.idle = 0;
+    });
+    const end = () => { this.dragging = false; };
+    canvas.addEventListener("pointerup", end); canvas.addEventListener("pointercancel", end);
+  },
+  sprite(s) {
+    if (!this.sprites[s]) { const c = colorOf(s); this.sprites[s] = makeSprite(c, shade(c, .35)); }
+    return this.sprites[s];
+  },
+  resize() {
+    const r = this.canvas.getBoundingClientRect();
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2); this.w = r.width; this.h = r.height;
+    this.canvas.width = Math.round(r.width * this.dpr); this.canvas.height = Math.round(r.height * this.dpr);
+  },
+
+  // الذرات بتتنطط جوّه الكاس
+  setBeaker(counts) {
+    const keep = this.mode === "beaker" ? this.parts : [];
+    const next = [];
+    Object.keys(counts).forEach(s => {
+      const old = keep.filter(p => p.s === s);
+      for (let i = 0; i < counts[s]; i++) {
+        if (old[i]) { next.push(old[i]); continue; }
+        const th = Math.random() * 6.28, ph = Math.acos(2 * Math.random() - 1), rr = 1.6 * Math.cbrt(Math.random());
+        const sp = .9;
+        next.push({ s, x: rr * Math.sin(ph) * Math.cos(th), y: rr * Math.cos(ph), z: rr * Math.sin(ph) * Math.sin(th),
+                    vx: (Math.random() - .5) * sp * 2, vy: (Math.random() - .5) * sp * 2, vz: (Math.random() - .5) * sp * 2, pop: 0 });
+      }
+    });
+    this.parts = next; this.bonds = []; this.mode = "beaker"; this.extent = 3.2;
+  },
+
+  react(m) {
+    let atoms, bonds;
+    if (m.lattice) {
+      atoms = []; bonds = []; const idx = {};
+      for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) {
+        idx[[i, j, k]] = atoms.length;
+        atoms.push([m.lattice[(i + j + k + 3) % 2], i * 1.5, j * 1.5, k * 1.5]);
+      }
+      for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) {
+        if (i < 1) bonds.push([idx[[i, j, k]], idx[[i + 1, j, k]], 0]);
+        if (j < 1) bonds.push([idx[[i, j, k]], idx[[i, j + 1, k]], 0]);
+        if (k < 1) bonds.push([idx[[i, j, k]], idx[[i, j, k + 1]], 0]);
+      }
+    } else if (m.a) { atoms = m.a; bonds = m.b; }
+    else { if (!m._auto) m._auto = buildAuto(m); atoms = m._auto.a; bonds = m._auto.b; }
+    // مركز المركّب في النص
+    const cx = atoms.reduce((a, p) => a + p[1], 0) / atoms.length, cy = atoms.reduce((a, p) => a + p[2], 0) / atoms.length, cz = atoms.reduce((a, p) => a + p[3], 0) / atoms.length;
+    const pool = this.parts.slice();
+    this.parts = atoms.map(([s, x, y, z]) => {
+      const i = pool.findIndex(p => p.s === s), from = i >= 0 ? pool.splice(i, 1)[0] : { x: 0, y: 0, z: 0 };
+      return { s, x: from.x, y: from.y, z: from.z, fx: from.x, fy: from.y, fz: from.z, tx: x - cx, ty: y - cy, tz: z - cz, pop: i >= 0 ? 0 : 1 };
+    });
+    this.bonds = bonds; this.mode = "mol"; this.anim = 0; this.flash = 1; this.lattice = !!m.lattice;
+    this.extent = Math.max(1.5, ...this.parts.map(p => Math.hypot(p.tx, p.ty, p.tz) + radiusOf(p.s) * .5));
+  },
+
+  start() { if (!this.raf) { this.resize(); this.last = performance.now(); this.raf = requestAnimationFrame(t => this.frame(t)); } },
+  stop() { cancelAnimationFrame(this.raf); this.raf = 0; },
+
+  frame(now) {
+    const dt = Math.min(.05, (now - this.last) / 1000); this.last = now; this.t += dt;
+    if (!this.dragging) { this.idle += dt; if (this.idle > 1.2) this.yaw += dt * .4; }
+    if (this.mode === "beaker") {
+      const R = 1.9;
+      this.parts.forEach(p => {
+        p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt; p.pop = Math.min(1, p.pop + dt * 3);
+        const d = Math.hypot(p.x, p.y, p.z);
+        if (d > R) { const nx = p.x / d, ny = p.y / d, nz = p.z / d, dot = p.vx * nx + p.vy * ny + p.vz * nz;
+          p.vx -= 2 * dot * nx; p.vy -= 2 * dot * ny; p.vz -= 2 * dot * nz; p.x = nx * R; p.y = ny * R; p.z = nz * R; }
+      });
+    } else {
+      this.anim = Math.min(1, this.anim + dt * 1.4);
+      const e = 1 - Math.pow(1 - this.anim, 3);
+      this.parts.forEach(p => { p.x = p.fx + (p.tx - p.fx) * e; p.y = p.fy + (p.ty - p.fy) * e; p.z = p.fz + (p.tz - p.fz) * e; if (this.anim > .5) p.pop = Math.min(1, p.pop + dt * 3); });
+    }
+    this.flash = Math.max(0, this.flash - dt * 1.6);
+    this.draw();
+    this.raf = requestAnimationFrame(t => this.frame(t));
+  },
+
+  project(x, y, z) {
+    const cy = Math.cos(this.yaw), sy = Math.sin(this.yaw), cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    const x1 = x * cy + z * sy, z1 = -x * sy + z * cy, y2 = y * cp - z1 * sp, z2 = y * sp + z1 * cp;
+    const S = this.scale, D = 9, f = D / (D + z2);
+    return { x: this.w / 2 + x1 * S * f, y: this.h / 2 + y2 * S * f, z: z2, f };
+  },
+
+  draw() {
+    const g = this.ctx;
+    g.setTransform(this.dpr, 0, 0, this.dpr, 0, 0); g.clearRect(0, 0, this.w, this.h);
+    this.scale = Math.min(this.w, this.h) * .42 / (this.extent || 3);
+    // الكاس
+    if (this.mode === "beaker") {
+      const r = 2.15 * this.scale, cx = this.w / 2, cy = this.h / 2;
+      const gl = g.createRadialGradient(cx - r * .3, cy - r * .3, r * .1, cx, cy, r);
+      gl.addColorStop(0, "rgba(140,200,255,.10)"); gl.addColorStop(1, "rgba(140,200,255,.03)");
+      g.fillStyle = gl; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
+      g.strokeStyle = "rgba(170,215,255,.45)"; g.lineWidth = 2; g.stroke();
+      g.strokeStyle = "rgba(255,255,255,.25)"; g.lineWidth = 3; g.beginPath(); g.arc(cx, cy, r * .86, Math.PI * 1.1, Math.PI * 1.4); g.stroke();
+      if (!this.parts.length) {
+        g.fillStyle = "rgba(200,220,255,.55)"; g.font = "600 15px Cairo, sans-serif"; g.textAlign = "center";
+        g.fillText("الكاس فاضي… اختار ذرات من تحت 👇", cx, cy);
+      }
+    }
+    const items = [];
+    const P = this.parts.map(p => this.project(p.x, p.y, p.z));
+    if (this.mode === "mol" && this.anim > .55) {
+      const alpha = Math.min(1, (this.anim - .55) / .35);
+      this.bonds.forEach(([i, j, o]) => items.push({ z: (P[i].z + P[j].z) / 2 + .01, bond: [P[i], P[j], o], alpha }));
+    }
+    this.parts.forEach((p, i) => items.push({ z: P[i].z, atom: p, q: P[i] }));
+    items.sort((a, b) => b.z - a.z);
+    for (const it of items) {
+      if (it.bond) {
+        const [a, b, o] = it.bond, dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+        const lw = Math.max(2, this.scale * .12 * (a.f + b.f) / 2);
+        g.globalAlpha = it.alpha; g.lineCap = "round";
+        if (o === 0) { g.setLineDash([lw * 1.2, lw * 1.6]); g.strokeStyle = "rgba(220,220,255,.55)"; g.lineWidth = lw * .6;
+          g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.stroke(); g.setLineDash([]); }
+        else {
+          const gap = lw * 1.25;
+          for (let k = 0; k < o; k++) {
+            const off = (k - (o - 1) / 2) * gap;
+            g.strokeStyle = "#cfd3ea"; g.lineWidth = lw;
+            g.beginPath(); g.moveTo(a.x + nx * off, a.y + ny * off); g.lineTo(b.x + nx * off, b.y + ny * off); g.stroke();
+          }
+        }
+        g.globalAlpha = 1;
+      } else {
+        const pop = .3 + .7 * it.atom.pop;
+        const size = radiusOf(it.atom.s) * (this.mode === "mol" ? (this.lattice ? .62 : .8) : .85) * this.scale * it.q.f * pop;
+        g.drawImage(this.sprite(it.atom.s), it.q.x - size / 2, it.q.y - size / 2, size, size);
+        if (size > 22) {
+          const hx = parseInt(colorOf(it.atom.s).slice(1), 16), lum = ((hx >> 16) & 255) * .3 + ((hx >> 8) & 255) * .59 + (hx & 255) * .11;
+          g.fillStyle = lum < 120 ? "rgba(255,255,255,.9)" : "rgba(0,0,0,.6)";
+          g.font = `800 ${Math.round(size * .3)}px Cairo, sans-serif`; g.textAlign = "center"; g.textBaseline = "middle";
+          g.fillText(it.atom.s, it.q.x, it.q.y + size * .04);
+        }
+      }
+    }
+    if (this.flash > 0) {
+      const cx = this.w / 2, cy = this.h / 2, R = Math.max(this.w, this.h) * .7;
+      const fl = g.createRadialGradient(cx, cy, 0, cx, cy, R);
+      fl.addColorStop(0, `rgba(255,255,220,${.85 * this.flash})`); fl.addColorStop(1, "rgba(255,255,220,0)");
+      g.fillStyle = fl; g.fillRect(0, 0, this.w, this.h);
+    }
+  }
+};
+
+/* ================= الواجهة ================= */
+if (typeof document !== "undefined") {
+  // لو حصل أي خطأ يظهر رسالة واضحة بدل ما الموقع يقف من غير ما تعرف ليه
+  window.addEventListener("error", e => {
+    const t = document.createElement("div");
+    t.textContent = "حصلت مشكلة: " + (e.message || "خطأ غير معروف");
+    t.style.cssText = "position:fixed;left:12px;right:12px;bottom:16px;z-index:99;background:#b3263e;color:#fff;padding:10px 14px;border-radius:12px;font-size:.9rem";
+    document.body.appendChild(t); setTimeout(() => t.remove(), 6000);
+  });
+  const $ = id => document.getElementById(id);
+  const table = $("ptable"), page = $("page"), bubble = $("bubble"), talkBtn = $("talk");
+  let current = null, openedFromTable = false;
+
+  // الجدول
+  ELEMENTS.forEach(el => {
+    const [x, y] = posOf(el.z);
+    const b = document.createElement("button");
+    b.className = "el"; b.style.gridColumn = x; b.style.gridRow = y;
+    b.style.background = CATS[el.c].color; b.dataset.z = el.z;
+    b.setAttribute("aria-label", `${el.n} ${el.s} رقم ${el.z}`);
+    b.innerHTML = `<span class="z">${el.z}</span><span class="s">${el.s}</span><span class="n">${el.n}</span>`;
+    table.appendChild(b);
+  });
+  [["57–71", 6], ["89–103", 7]].forEach(([label, row]) => {
+    const d = document.createElement("div"); d.className = "ph"; d.textContent = label;
+    d.style.gridColumn = 3; d.style.gridRow = row; table.appendChild(d);
+  });
+  table.addEventListener("click", e => {
+    const b = e.target.closest(".el"); if (!b) return;
+    openElement(+b.dataset.z, true);
+  });
+
+  // الألوان
+  $("legend").innerHTML = Object.values(CATS).map(c => `<span><i style="background:${c.color}"></i>${c.name}</span>`).join("");
+
+  // البحث
+  const q = $("q");
+  const norm = s => s.replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase().trim();
+  function matches(term) {
+    const t = norm(term); if (!t) return null;
+    return ELEMENTS.filter(el => String(el.z) === t || el.s.toLowerCase() === t || norm(el.n).includes(t) || el.s.toLowerCase().startsWith(t));
+  }
+  q.addEventListener("input", () => {
+    const m = matches(q.value), set = m ? new Set(m.map(e => e.z)) : null;
+    table.querySelectorAll(".el").forEach(b => {
+      const z = +b.dataset.z;
+      b.classList.toggle("dim", !!set && !set.has(z));
+      b.classList.toggle("hit", !!set && set.has(z) && set.size <= 3);
+    });
+    if (m && m.length) { const first = table.querySelector(`.el[data-z="${m[0].z}"]`); first && first.scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" }); }
+  });
+  q.addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    const m = matches(q.value); if (m && m.length) { q.blur(); openElement(m[0].z, true); }
+  });
+
+  // صفحة العنصر
+  Atom.init($("atom"));
+
+  function render(el) {
+    current = el;
+    const cat = CATS[el.c], sh = shellsOf(el.z);
+    $("topTitle").textContent = `${el.z} · ${el.n}`;
+    const tile = $("tile");
+    tile.style.background = cat.color;
+    tile.innerHTML = `<small>${el.z}</small><b>${el.s}</b><small>${el.m}</small>`;
+    $("elName").textContent = el.n;
+    $("elMeta").innerHTML = `${cat.name}<br>الكتلة <span class="ltr">${el.m}</span> · المدارات <span class="ltr">${sh.join(" · ")}</span>`;
+    bubble.innerHTML = introSentences(el, false).map((s, i) => `<span data-i="${i}">${s}</span>`).join(" ");
+    bubble.scrollTop = 0;
+    $("prev").disabled = el.z === 1; $("next").disabled = el.z === ELEMENTS.length;
+    Atom.setElement(el);
+    setTalking(false);
+  }
+
+  function show(z) {
+    const el = ELEMENTS[z - 1]; if (!el) return;
+    if (!page.classList.contains("open")) { page.classList.add("open"); document.body.style.overflow = "hidden"; }
+    if (!current || current.z !== z) render(el);
+    Atom.resize(); Atom.start();
+  }
+  function hide() {
+    Speaker.stop(); Atom.stop(); page.classList.remove("open"); document.body.style.overflow = ""; current = null;
+  }
+
+  // talkNow لازم يتنادى من جوّه ضغطة المستخدم (آيفون مش بيسمح بالصوت غير كده)
+  // بعض المعاينات (زي معاينة الملفات في التطبيقات) مش بتسمح بتغيير الرابط، فبنتجاهل الخطأ ونكمّل
+  function setHash(z, push) {
+    try {
+      if (push) history.pushState(null, "", "#" + z); else history.replaceState(null, "", "#" + z);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function openElement(z, talkNow) {
+    if (location.hash !== "#" + z) {
+      const push = !page.classList.contains("open");
+      if (setHash(z, push) && push) openedFromTable = true;
+    }
+    show(z);
+    if (talkNow) talk();
+  }
+
+  const NO_SOUND = `<div class="warn" style="margin-top:8px">🔇 الجهاز أو التطبيق ده مش بيشغّل النطق.
+    جرّب تفتح الرابط من <b>Chrome</b> أو <b>Safari</b> نفسه بدل ما تفتحه جوّه تطبيق تاني، واتأكد إن الموبايل مش صامت.
+    الحل اللي بيشتغل في كل مكان هو ملفات الصوت المسجّلة.</div>`;
+  Voice.onSilent = () => { if (!bubble.querySelector(".warn")) bubble.insertAdjacentHTML("beforeend", NO_SOUND); setTalking(false); };
+
+  function talk() {
+    if (!current) return;
+    const ok = Speaker.speak(current);
+    if (!ok && !bubble.querySelector(".warn")) bubble.insertAdjacentHTML("beforeend", NO_SOUND);
+  }
+
+  function setTalking(on) {
+    Atom.talking = on;
+    talkBtn.textContent = on ? "⏹ وقّف" : "🔊 اسمعني";
+  }
+  Voice.onState = AudioVoice.onState = setTalking;
+  Voice.onSentence = AudioVoice.onSentence = i => {
+    bubble.querySelectorAll("span[data-i]").forEach(s => s.classList.toggle("now", +s.dataset.i === i));
+    const now = bubble.querySelector("span.now"); if (now) now.scrollIntoView({ block: "nearest" });
+  };
+
+  talkBtn.addEventListener("click", () => { Speaker.talking() ? Speaker.stop() : talk(); });
+  $("prev").addEventListener("click", () => current && openElement(current.z - 1, true));
+  $("next").addEventListener("click", () => current && openElement(current.z + 1, true));
+  $("back").addEventListener("click", () => {
+    if (openedFromTable) { openedFromTable = false; try { history.back(); return; } catch (e) {} }
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    hide();
+  });
+
+
+  // ===== المختبر =====
+  const lab = $("lab"), picker = $("picker"), labResult = $("labResult"), slotA = $("slotA"), slotB = $("slotB");
+  let selA = null, selB = null, lastMade = null, labOpenedFromTable = false, discovered = new Set();
+  try { discovered = new Set(JSON.parse(localStorage.getItem("discovered") || "[]").filter(k => LAB_BY_KEY[k])); } catch (e) {}
+  Mol.init($("labCanvas"));
+
+  // كل عنصر بيتفاعل مع مين
+  const PARTNERS = {};
+  COMPOUNDS.forEach(m => {
+    const ks = Object.keys(m.c);
+    ks.forEach(a => { PARTNERS[a] = PARTNERS[a] || new Set(); ks.forEach(b => { if (b !== a || ks.length === 1) PARTNERS[a].add(b); }); });
+  });
+  const sumC = m => Object.values(m.c).reduce((a, b) => a + b, 0);
+  const pairList = (A, B) => COMPOUNDS.filter(m => {
+      const ks = Object.keys(m.c);
+      return A === B ? ks.length === 1 && m.c[A] : ks.length === 2 && m.c[A] && m.c[B];
+    }).sort((p, q) => (!!p.gen - !!q.gen) || (sumC(p) - sumC(q)));
+  const extrasList = (A, B) => A === B ? [] : COMPOUNDS.filter(m => Object.keys(m.c).length > 2 && m.c[A] && m.c[B]);
+  const howMany = n => n === 1 ? "مركّب واحد" : n === 2 ? "مركّبين" : n <= 10 ? CONSTRUCT[n] + " مركّبات" : egyNumber(n) + " مركّب";
+
+  ELEMENTS.forEach(el => {
+    const [x, y] = posOf(el.z), b = document.createElement("button");
+    b.className = "mc"; b.style.gridColumn = x; b.style.gridRow = y;
+    b.style.background = CATS[el.c].color; b.dataset.s = el.s;
+    b.innerHTML = `<small>${el.z}</small>${el.s}`; b.setAttribute("aria-label", el.n);
+    picker.appendChild(b);
+  });
+
+  function whyNot(A, B) {
+    const ng = s => bySym[s].c === "ng", heavy = s => bySym[s].z >= 99;
+    const metal = s => !["nm", "hl", "ng", "md"].includes(bySym[s].c);
+    if (ng(A) || ng(B)) return "الغازات النبيلة مداراتها مليانة ومش بتحب تتفاعل، إلا الزينون والكريبتون مع الفلور.";
+    if (heavy(A) || heavy(B)) return "العناصر التقيلة أوي دي متصنّعة في المعمل وبتتحلّل بسرعة، فمحدش لحق يعمل منها مركّبات.";
+    if (metal(A) && metal(B)) return "الفلزات مع بعض مش بتعمل مركّبات، بس ممكن تتخلط وتعمل سبيكة زي البرونز.";
+    return "جرّب تغيّر واحد منهم. الأكسجين والكلور بيتفاعلوا مع حاجات كتير.";
+  }
+  function slotView(btn, s, label) {
+    if (!s) { btn.className = "slot"; btn.textContent = label; btn.style.background = ""; return; }
+    btn.className = "slot full"; btn.style.background = colorOf(s); btn.textContent = `${s} · ${elName(s)} ✕`;
+  }
+  function card(m) {
+    const done = discovered.has(m.key);
+    return `<div class="card${done ? " done" : ""}"><div class="info"><b>${done ? "✅ " : ""}${m.n}</b> <span class="fx">${m.f}</span>
+      <div class="need">محتاج: ${atomsPhrase(m.c, " + ")}</div></div>
+      <button class="btn primary" data-k="${m.key}">⚡ اعمله</button></div>`;
+  }
+
+  function renderLab() {
+    slotView(slotA, selA, "① اختار عنصر"); slotView(slotB, selB, "② اختار عنصر تاني");
+    $("foundCount").textContent = `اكتشفت ${discovered.size} من ${COMPOUNDS.length} مركّب`;
+    const L = lastMade;
+    let html = L ? `<div class="made"><h3>${L.isNew ? "🎉 اكتشاف جديد: " : "✅ "}${L.m.n} <span class="fx">${L.m.f}</span></h3>
+      <div class="need">${atomsPhrase(L.m.c, " + ")}${L.m.n2 ? " · اسمه العلمي: " + L.m.n2 : ""}</div>${L.m.t}</div>` : "";
+    const partners = selA && !selB ? PARTNERS[selA] : null;
+    picker.querySelectorAll(".mc").forEach(b => {
+      b.classList.toggle("sel", b.dataset.s === selA || b.dataset.s === selB);
+      b.classList.toggle("dim", !!selA && !selB && !(partners && partners.has(b.dataset.s)));
+    });
+    if (selA && selB) {
+      $("miniWrap").style.display = "none";
+      const list = pairList(selA, selB), extra = extrasList(selA, selB);
+      if (!list.length && !extra.length) {
+        html += `<p>💨 <b>${selA === selB ? `ال${elName(selA)} لوحده` : `ال${elName(selA)} وال${elName(selB)}`}</b> مش بيعملوا مركّب معروف في المختبر. ${whyNot(selA, selB)}</p>`;
+      } else {
+        if (list.length) html += `<div class="need" style="margin-bottom:6px">${selA === selB ? `ال${elName(selA)} لوحده ممكن يعمل:` : `ال${elName(selA)} وال${elName(selB)} ممكن يعملوا ${howMany(list.length)}:`}</div>` + list.map(card).join("");
+        if (extra.length) html += `<div class="need" style="margin:8px 0 6px">ولو زوّدت عناصر تانية:</div>` + extra.map(card).join("");
+      }
+      html += `<button class="btn" id="changePair" style="width:100%;margin-top:4px">🔁 اختار عناصر تانية</button>`;
+    } else {
+      $("miniWrap").style.display = "";
+      if (!selA) html += `<p style="margin:0 0 8px">اختار عنصرين من الجدول، وأنا أقولك يعملوا إيه مع بعض ومحتاج كام ذرة من كل واحد. 👇</p>`;
+      else {
+        const ps = [...(partners || [])];
+        html += ps.length
+          ? `<div class="partners">ال${elName(selA)} بيتفاعل مع العناصر المنوّرة، زي: ${ps.slice(0, 10).map(s => `<button class="chip" data-p="${s}" style="background:${colorOf(s)}">${s}</button>`).join("")}${ps.length > 10 ? " وغيرهم" : ""}</div>`
+          : `<div class="partners">💨 ال${elName(selA)} مش بيعمل مركّبات معروفة في المختبر. ${whyNot(selA, selA)}</div>`;
+      }
+    }
+    labResult.innerHTML = html;
+  }
+
+  function beakerFromSel() {
+    const c = {}; [selA, selB].filter(Boolean).forEach(x => { c[x] = (c[x] || 0) + 1; });
+    Mol.setBeaker(c);
+  }
+  function pick(s) {
+    lastMade = null;
+    if (!selA) selA = s; else if (!selB) selB = s; else { selA = s; selB = null; }
+    Speaker.stop(); beakerFromSel(); renderLab(); $("labScroll").scrollTop = 0;
+  }
+  function labSay(m) {
+    const parts = labSentences(m);
+    if (AudioVoice.available) {
+      const w = AudioVoice.who, ga = m.gen && GEN_AUDIO[w] && GEN_AUDIO[w][m.cat];
+      if (ga && ga[m.key]) return AudioVoice.playSprite(`audio/${w}/gen/${m.cat}.mp3`, ga[m.key][0], ga[m.key][1], parts);
+      const ca = !m.gen && CUR_AUDIO[w] && CUR_AUDIO[w][m.key];
+      if (ca) return AudioVoice.playSprite(`audio/${w}/lab-${ca[0]}.mp3`, ca[1], ca[2], parts);
+    }
+    Voice.speak(parts);
+  }
+  function make(key) {
+    const m = LAB_BY_KEY[key]; if (!m) return;
+    labSay(m);                         // الصوت لازم يبدأ جوّه الضغطة
+    Mol.setBeaker(m.c);
+    setTimeout(() => Mol.react(m), 650);
+    const isNew = !discovered.has(key); discovered.add(key);
+    try { localStorage.setItem("discovered", JSON.stringify([...discovered])); } catch (e) {}
+    lastMade = { m, isNew }; renderLab(); $("labScroll").scrollTop = 0;
+  }
+
+  picker.addEventListener("click", e => { const b = e.target.closest(".mc"); if (b) pick(b.dataset.s); });
+  labResult.addEventListener("click", e => {
+    const p = e.target.closest("[data-p]"); if (p) return pick(p.dataset.p);
+    const k = e.target.closest("[data-k]"); if (k) return make(k.dataset.k);
+    if (e.target.closest("#changePair")) { selA = selB = null; lastMade = null; Speaker.stop(); beakerFromSel(); renderLab(); }
+  });
+  slotA.addEventListener("click", () => { if (!selA) return; selA = selB; selB = null; lastMade = null; Speaker.stop(); beakerFromSel(); renderLab(); });
+  slotB.addEventListener("click", () => { if (!selB) return; selB = null; lastMade = null; Speaker.stop(); beakerFromSel(); renderLab(); });
+  $("labClear").addEventListener("click", () => { selA = selB = null; lastMade = null; Speaker.stop(); beakerFromSel(); renderLab(); });
+
+  function showLab() {
+    if (page.classList.contains("open")) hide();
+    lab.classList.add("open"); document.body.style.overflow = "hidden";
+    beakerFromSel(); renderLab(); Mol.start();
+  }
+  function hideLab() { Speaker.stop(); Mol.stop(); lab.classList.remove("open"); document.body.style.overflow = ""; }
+  $("openLab").addEventListener("click", () => {
+    try { history.pushState(null, "", "#lab"); labOpenedFromTable = true; } catch (e) {}
+    showLab();
+  });
+  $("labBack").addEventListener("click", () => {
+    if (labOpenedFromTable) { labOpenedFromTable = false; try { history.back(); return; } catch (e) {} }
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    hideLab();
+  });
+
+  // كتاب الاكتشافات
+  const bookSheet = $("bookSheet");
+  $("labBookBtn").addEventListener("click", () => {
+    const list = COMPOUNDS.filter(m => discovered.has(m.key));
+    $("book").innerHTML = list.length ? list.map(m => `<div>✅ ${m.n}<br><b>${m.f}</b></div>`).join("")
+      : `<div style="grid-column:1/-1">لسه ما اكتشفتش حاجة. اختار عنصرين وجرّب!</div>`;
+    $("bookTitle").textContent = `📖 كتاب الاكتشافات (${discovered.size} من ${COMPOUNDS.length})`;
+    bookSheet.style.display = "flex";
+  });
+  $("bookClose").addEventListener("click", () => { bookSheet.style.display = "none"; });
+  bookSheet.addEventListener("click", e => { if (e.target === bookSheet) bookSheet.style.display = "none"; });
+
+  function fromHash() {
+    if (location.hash === "#lab") { showLab(); return; }
+    if (lab.classList.contains("open")) hideLab();
+    const z = parseInt(location.hash.slice(1), 10);
+    if (z >= 1 && z <= ELEMENTS.length) show(z); else if (page.classList.contains("open")) hide();
+  }
+  window.addEventListener("hashchange", fromHash);
+  window.addEventListener("popstate", fromHash);
+  document.addEventListener("keydown", e => {
+    if (!page.classList.contains("open")) return;
+    if (e.key === "Escape") $("back").click();
+    if (e.key === "ArrowLeft" && current && current.z < ELEMENTS.length) openElement(current.z + 1, true);
+    if (e.key === "ArrowRight" && current && current.z > 1) openElement(current.z - 1, true);
+  });
+
+  // إعدادات الصوت
+  const settings = $("settings"), sel = $("voiceSel"), rate = $("rate");
+  function fillVoices() {
+    Voice.load();
+    sel.innerHTML = "";
+    if (!Voice.supported) {
+      sel.innerHTML = `<option>مش مدعوم</option>`; sel.disabled = true;
+    } else if (!Voice.voices.length) {
+      sel.innerHTML = `<option>مفيش صوت عربي على الجهاز ده</option>`; sel.disabled = true;
+    } else {
+      sel.disabled = false;
+      Voice.voices.forEach(v => {
+        const o = document.createElement("option"); o.value = v.name;
+        o.textContent = `${v.name} (${v.lang})${v.lang.toLowerCase() === "ar-eg" ? " ✓ مصري" : ""}`;
+        if (Voice.chosen && v.name === Voice.chosen.name) o.selected = true;
+        sel.appendChild(o);
+      });
+    }
+    rate.value = Voice.rate; $("rateVal").textContent = Voice.rate.toFixed(2);
+    const hasEgy = Voice.voices.some(v => v.lang.toLowerCase() === "ar-eg");
+    $("humanBox").style.display = (AudioVoice.have.shakir || AudioVoice.have.salma) ? "" : "none";
+    ["shakir", "salma"].forEach(w => {
+      const b = $(w === "shakir" ? "pickShakir" : "pickSalma");
+      b.disabled = !AudioVoice.have[w];
+      b.classList.toggle("primary", AudioVoice.available && AudioVoice.who === w);
+    });
+    $("voiceNote").innerHTML = AudioVoice.available
+      ? `🎙️ الصوت المصري شغّال ✓ اختار شاكر أو سلمى. صوت الجهاز بيستخدم بس لو ملف عنصر ناقص.`
+      : !Voice.supported
+      ? `<span class="warn">المتصفح ده مش بيدعم النطق. جرّب كروم أو سفاري أو إيدج.</span>`
+      : !Voice.voices.length
+        ? `<span class="warn">جهازك مفيهوش صوت عربي متسطّب، فالكلام هيتقري بنطق أجنبي.</span><br>على أندرويد: الإعدادات ← تحويل النص لكلام ← نزّل اللغة العربية. على آيفون: الإعدادات ← تسهيلات الاستخدام ← المحتوى المنطوق ← الأصوات ← العربية.`
+        : hasEgy
+          ? `فيه صوت مصري على جهازك ✓ واخترناه تلقائيًا.`
+          : `مفيش صوت مصري على الجهاز ده، فالكلام المصري هيتقري بصوت عربي تاني. أحسن صوت مصري متاح ببلاش في متصفح <b>Microsoft Edge</b> على الكمبيوتر (اسمه Salma أو Shakir).`;
+  }
+  if (Voice.supported) { fillVoices(); speechSynthesis.onvoiceschanged = fillVoices; }
+  sel.addEventListener("change", () => {
+    Voice.chosen = Voice.voices.find(v => v.name === sel.value) || null;
+    try { localStorage.setItem("voiceName", sel.value); } catch (e) {}
+  });
+  rate.addEventListener("input", () => {
+    Voice.rate = parseFloat(rate.value); $("rateVal").textContent = Voice.rate.toFixed(2);
+    try { localStorage.setItem("voiceRate", rate.value); } catch (e) {}
+  });
+  const openSet = () => { fillVoices(); settings.classList.add("open"); };
+  $("openSettings").addEventListener("click", openSet);
+  $("openSettings2").addEventListener("click", openSet);
+  $("closeSettings").addEventListener("click", () => settings.classList.remove("open"));
+  settings.addEventListener("click", e => { if (e.target === settings) settings.classList.remove("open"); });
+  $("testVoice").addEventListener("click", () => Speaker.speak(ELEMENTS[25]));
+  settings.addEventListener("click", e => { if (e.target === settings) Speaker.stop(); });
+  $("closeSettings").addEventListener("click", () => Speaker.stop());
+
+  ["pickShakir", "pickSalma"].forEach(id => $(id).addEventListener("click", e => {
+    if (AudioVoice.setWho(e.currentTarget.dataset.who)) { fillVoices(); Speaker.speak(ELEMENTS[25]); }
+  }));
+  AudioVoice.probe().then(() => { if (settings.classList.contains("open")) fillVoices(); });
+  fromHash();
+}
+</script>
+</body>
+</html>
